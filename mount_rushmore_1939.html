@@ -1,0 +1,4572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mount Rushmore 1939 — Mundo Vóxel Interactivo 🇸🇻</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1c130d;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* Top Control Bar */
+    #top-bar {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      z-index: 30;
+      max-width: 96vw;
+      padding: 6px 10px;
+      background: rgba(20, 14, 10, 0.78);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 210, 140, 0.32);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+    .ui-btn {
+      background: linear-gradient(180deg, rgba(62, 46, 34, 0.92), rgba(38, 28, 20, 0.95));
+      color: #fff5e4;
+      border: 1px solid rgba(255, 205, 130, 0.4);
+      border-radius: 10px;
+      padding: 8px 13px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    }
+    .ui-btn:hover {
+      border-color: #ffd080;
+      background: linear-gradient(180deg, rgba(84, 62, 44, 0.95), rgba(50, 36, 26, 0.98));
+    }
+    .ui-btn:active {
+      transform: scale(0.95);
+    }
+    .ui-btn.primary {
+      background: linear-gradient(180deg, #1d63c8, #0f4596);
+      border-color: #7ab8ff;
+      color: #ffffff;
+    }
+    .ui-btn.active-mode {
+      background: linear-gradient(180deg, #d9822b, #a85814);
+      border-color: #ffe09e;
+      color: #fff;
+    }
+    .ui-btn.danger {
+      background: linear-gradient(180deg, #b83b2e, #822218);
+      border-color: #ff9c8f;
+    }
+
+    /* Status Pill & Toast */
+    #status-pill {
+      position: fixed;
+      top: 66px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      background: rgba(18, 13, 9, 0.72);
+      color: #ffe6be;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 210, 140, 0.25);
+      pointer-events: none;
+      text-align: center;
+      white-space: nowrap;
+    }
+    #toast-msg {
+      position: fixed;
+      top: 104px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      background: rgba(15, 71, 175, 0.92);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.45);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    /* Crosshair in Center of Screen (Player Mode) */
+    #crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 22px;
+      height: 22px;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      pointer-events: none;
+      display: none;
+    }
+    #crosshair::before, #crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 250, 235, 0.92);
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.85);
+    }
+    #crosshair::before {
+      top: 10px; left: 3px; width: 16px; height: 2px;
+    }
+    #crosshair::after {
+      top: 3px; left: 10px; width: 2px; height: 16px;
+    }
+
+    /* Minecraft-Style Hotbar */
+    #hotbar {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 5px;
+      padding: 6px;
+      background: rgba(20, 15, 11, 0.84);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(255, 210, 145, 0.38);
+      border-radius: 14px;
+      z-index: 30;
+      box-shadow: 0 8px 26px rgba(0,0,0,0.55);
+      max-width: 96vw;
+      overflow-x: auto;
+    }
+    .hotbar-slot {
+      width: 48px;
+      height: 52px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff2dd;
+      font-size: 10px;
+      font-weight: 700;
+      position: relative;
+      flex-shrink: 0;
+      transition: transform 0.1s ease, border-color 0.1s ease, background 0.1s ease;
+    }
+    .hotbar-slot.selected {
+      border-color: #ffd470;
+      background: rgba(255, 200, 90, 0.24);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(255, 190, 60, 0.35);
+    }
+    .hotbar-slot .slot-key {
+      position: absolute;
+      top: 2px;
+      left: 5px;
+      font-size: 9px;
+      color: rgba(255, 230, 180, 0.75);
+    }
+    .hotbar-slot .slot-icon {
+      font-size: 20px;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    /* Mobile / Touch Controls (Roblox & Minecraft Style) */
+    #touch-controls {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 26;
+      display: none;
+    }
+    #joystick-zone {
+      position: absolute;
+      bottom: 86px;
+      left: 20px;
+      width: 132px;
+      height: 132px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(20,15,10,0.48) 100%);
+      border: 2px solid rgba(255, 225, 175, 0.38);
+      pointer-events: auto;
+      touch-action: none;
+    }
+    #joystick-knob {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 52px;
+      height: 52px;
+      margin-left: -26px;
+      margin-top: -26px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffe6b8, #c88a42);
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+    #touch-action-pad {
+      position: absolute;
+      bottom: 84px;
+      right: 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 64px);
+      gap: 10px;
+      pointer-events: auto;
+    }
+    .touch-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(28, 20, 14, 0.78);
+      border: 2px solid rgba(255, 215, 150, 0.5);
+      color: #fff8eb;
+      font-size: 11px;
+      font-weight: 800;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.45);
+      cursor: pointer;
+      touch-action: none;
+    }
+    .touch-btn span.ico {
+      font-size: 20px;
+      line-height: 1;
+    }
+    .touch-btn:active, .touch-btn.pressed {
+      background: rgba(230, 145, 45, 0.88);
+      border-color: #fff;
+      transform: scale(0.93);
+    }
+    .touch-btn.fly-on {
+      background: rgba(25, 115, 230, 0.88);
+      border-color: #a8d8ff;
+    }
+
+    /* Quick Teleport / Help Drawer */
+    #help-card {
+      position: fixed;
+      bottom: 80px;
+      left: 16px;
+      z-index: 24;
+      background: rgba(20, 14, 10, 0.76);
+      backdrop-filter: blur(8px);
+      color: #ffe9c8;
+      border: 1px solid rgba(255, 210, 140, 0.28);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 11.5px;
+      line-height: 1.45;
+      max-width: 265px;
+      display: none;
+      pointer-events: none;
+    }
+    @media (max-width: 768px) {
+      #top-bar { top: 6px; padding: 4px 6px; gap: 5px; }
+      .ui-btn { padding: 6px 9px; font-size: 11.5px; }
+      #status-pill { top: 54px; font-size: 11px; }
+      #help-card { display: none !important; }
+      .hotbar-slot { width: 41px; height: 46px; font-size: 9px; }
+      .hotbar-slot .slot-icon { font-size: 17px; }
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Barra Superior de Modos e Interacción -->
+  <div id="top-bar">
+    <button id="btn-mode" class="ui-btn primary" title="Alternar entre Modo Panorámico y Modo Jugador Minecraft">
+      🎮 Entrar a la Isla (Respawn)
+    </button>
+    <button id="btn-pov" class="ui-btn" style="display:none;" title="Cambiar entre 1ª y 3ª Persona (Tecla V)">
+      👁️ 3ª Persona
+    </button>
+    <button id="btn-fly" class="ui-btn" style="display:none;" title="Activar/Desactivar Vuelo Libre (Tecla F o Doble Espacio)">
+      🕊️ Volar: OFF
+    </button>
+    <button id="btn-vehicle" class="ui-btn" style="display:none;" title="Subir al Teleférico o Camión (Tecla E)">
+      🚡 Subir al Teleférico
+    </button>
+    <button id="btn-teleport" class="ui-btn" style="display:none;" title="Viaje rápido a lugares clave de la isla">
+      📍 Ir a: Campamento
+    </button>
+    <button id="btn-reset" class="ui-btn danger" title="Restaurar todos los árboles, rocas y casas a su estado original (Tecla R)">
+      🔄 Reiniciar Isla
+    </button>
+  </div>
+
+  <div id="status-pill">🎬 Modo Panorámico — Arrastra para mirar o pulsa «Entrar a la Isla (Respawn)»</div>
+  <div id="toast-msg"></div>
+  <div id="crosshair"></div>
+
+  <div id="help-card">
+    <b>Controles PC:</b><br/>
+    • <b>W A S D</b>: Caminar / Nadar / Volar<br/>
+    • <b>Espacio</b>: Saltar / Nadar (2x = Volar)<br/>
+    • <b>Clic Izq / Der</b>: Picar / Poner o 🧨<br/>
+    • <b>V</b>: 1ª/3ª Persona • <b>E</b>: Teleférico/Camión<br/>
+    • <b>1-8</b>: Bloques • <b>R</b>: Reiniciar Isla
+  </div>
+
+  <!-- Barra de Herramientas Estilo Minecraft (Hotbar) -->
+  <div id="hotbar"></div>
+
+  <!-- Controles Táctiles Estilo Roblox / Minecraft para Celular -->
+  <div id="touch-controls">
+    <div id="joystick-zone">
+      <div id="joystick-knob"></div>
+    </div>
+    <div id="touch-action-pad">
+      <button id="tbtn-jump" class="touch-btn"><span class="ico">⬆️</span>Saltar</button>
+      <button id="tbtn-fly" class="touch-btn"><span class="ico">🕊️</span>Volar</button>
+      <button id="tbtn-mine" class="touch-btn"><span class="ico">⛏️</span>Picar</button>
+      <button id="tbtn-use" class="touch-btn"><span class="ico">🧱</span>Usar/🧨</button>
+    </div>
+  </div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ============================================================================
+// 0. URL PARAMS, DIMENSIONS & DETERMINISTIC MATH/NOISE
+// ============================================================================
+const params = new URLSearchParams(window.location.search);
+const parseDim = (val, def) => {
+  const n = parseInt(val, 10);
+  return Number.isFinite(n) && n >= 64 && n <= 7680 ? n : def;
+};
+const FIXED_CAPTURE = params.has('w') || params.has('h') || params.get('closeup') === '1';
+let WIDTH = FIXED_CAPTURE ? parseDim(params.get('w'), 1920) : window.innerWidth;
+let HEIGHT = FIXED_CAPTURE ? parseDim(params.get('h'), 1080) : window.innerHeight;
+const CLOSEUP_MODE = params.get('closeup') === '1';
+const CLOSEUP_FACE = params.get('face') || '';
+const DURATION = 12.0;
+
+const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+const mix = (a, b, t) => a + (b - a) * t;
+const smoothstep = (e0, e1, x) => {
+  const t = clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+  return t * t * (3.0 - 2.0 * t);
+};
+const smootherstep = (e0, e1, x) => {
+  const t = clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+  return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+};
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hash3i(x, y, z) {
+  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2147483647);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+function hash2i(x, z) {
+  let h = Math.imul(x | 0, 374761393) ^ Math.imul(z | 0, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+function vnoise2(x, z) {
+  const ix = Math.floor(x), iz = Math.floor(z);
+  const fx = x - ix, fz = z - iz;
+  const ux = fx * fx * (3.0 - 2.0 * fx);
+  const uz = fz * fz * (3.0 - 2.0 * fz);
+  const a = hash2i(ix, iz);
+  const b = hash2i(ix + 1, iz);
+  const c = hash2i(ix, iz + 1);
+  const d = hash2i(ix + 1, iz + 1);
+  return mix(mix(a, b, ux), mix(c, d, ux), uz);
+}
+
+function vnoise3(x, y, z) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  const fx = x - ix, fy = y - iy, fz = z - iz;
+  const ux = fx * fx * (3.0 - 2.0 * fx);
+  const uy = fy * fy * (3.0 - 2.0 * fy);
+  const uz = fz * fz * (3.0 - 2.0 * fz);
+  const c000 = hash3i(ix, iy, iz),         c100 = hash3i(ix + 1, iy, iz);
+  const c010 = hash3i(ix, iy + 1, iz),     c110 = hash3i(ix + 1, iy + 1, iz);
+  const c001 = hash3i(ix, iy, iz + 1),     c101 = hash3i(ix + 1, iy, iz + 1);
+  const c011 = hash3i(ix, iy + 1, iz + 1), c111 = hash3i(ix + 1, iy + 1, iz + 1);
+  const x00 = mix(c000, c100, ux), x10 = mix(c010, c110, ux);
+  const x01 = mix(c001, c101, ux), x11 = mix(c011, c111, ux);
+  return mix(mix(x00, x10, uy), mix(x01, x11, uy), uz);
+}
+
+function fbm2(x, z, oct = 4) {
+  let v = 0.0, amp = 0.5, f = 1.0, norm = 0.0;
+  for (let i = 0; i < oct; i++) {
+    v += amp * vnoise2(x * f, z * f);
+    norm += amp;
+    f *= 2.03;
+    amp *= 0.5;
+  }
+  return v / norm;
+}
+
+function fbm3(x, y, z, oct = 3) {
+  let v = 0.0, amp = 0.5, f = 1.0, norm = 0.0;
+  for (let i = 0; i < oct; i++) {
+    v += amp * vnoise3(x * f, y * f, z * f);
+    norm += amp;
+    f *= 2.05;
+    amp *= 0.5;
+  }
+  return v / norm;
+}
+
+function ridged2(x, z, oct = 3) {
+  let v = 0.0, amp = 0.5, f = 1.0, norm = 0.0;
+  for (let i = 0; i < oct; i++) {
+    const n = 1.0 - Math.abs(vnoise2(x * f, z * f) * 2.0 - 1.0);
+    v += amp * n * n;
+    norm += amp;
+    f *= 2.11;
+    amp *= 0.5;
+  }
+  return v / norm;
+}
+
+function packColor(r, g, b, jitterTier = 1) {
+  const ri = clamp(Math.round(r), 0, 255);
+  const gi = clamp(Math.round(g), 0, 255);
+  const bi = clamp(Math.round(b), 0, 255);
+  return (((jitterTier & 0x7f) << 24) | (ri << 16) | (gi << 8) | bi) >>> 0;
+}
+
+function hexToPacked(hex, jitterTier = 1) {
+  return ((((jitterTier & 0x7f) << 24) | (hex & 0xffffff)) >>> 0);
+}
+
+// ============================================================================
+// 1. RENDERER, SCENE, CAMERA, SKY DOME, LIGHTS & POST-PROCESSING
+// ============================================================================
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: 'high-performance',
+  preserveDrawingBuffer: true,
+});
+renderer.setSize(WIDTH, HEIGHT, false);
+renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.06;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+// Warm golden-hour atmospheric haze fog — rich warmth while preserving crisp foreground diorama contrast
+const FOG_COLOR = new THREE.Color(0xf0b476);
+scene.fog = new THREE.FogExp2(FOG_COLOR, 0.00088);
+
+const camera = new THREE.PerspectiveCamera(35, WIDTH / HEIGHT, 1.0, 950.0);
+
+// Raking 3/4 golden-hour key sun illuminating all four faces with dramatic chiaroscuro relief
+const SUN_DIR = new THREE.Vector3(0.82, 0.31, 0.48).normalize();
+// Visible golden-hour sun disc & warm halo in upper-right sky behind the mountain needles during the orbit
+const SKY_SUN_DIR = new THREE.Vector3(0.55, 0.145, -0.822).normalize();
+
+const skyGeo = new THREE.SphereGeometry(560, 64, 40);
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  depthWrite: false,
+  fog: false,
+  uniforms: {
+    uSunDir: { value: SKY_SUN_DIR },
+    uTime: { value: 0 },
+  },
+  vertexShader: /* glsl */`
+    varying vec3 vWorldDir;
+    void main() {
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      vWorldDir = normalize(wp.xyz);
+      gl_Position = projectionMatrix * viewMatrix * wp;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform vec3 uSunDir;
+    uniform float uTime;
+    varying vec3 vWorldDir;
+    void main() {
+      vec3 d = normalize(vWorldDir);
+      float y = clamp(d.y, -0.45, 1.0);
+
+      // Tuned for showcase camera frustum (d.y in [-0.28, +0.28]) so rich golden-hour sky gradient fills the frame!
+      vec3 zenithCol  = vec3(0.11, 0.27, 0.55);
+      vec3 upperSky   = vec3(0.22, 0.41, 0.66);
+      vec3 roseAmber  = vec3(0.90, 0.53, 0.34);
+      vec3 horizonCol = vec3(0.98, 0.72, 0.42);
+      vec3 lowerPeach = vec3(0.83, 0.53, 0.35);
+      vec3 nadirCol   = vec3(0.46, 0.28, 0.21);
+
+      vec3 col;
+      if (y >= 0.0) {
+        float tUp = smoothstep(0.0, 0.27, y);
+        float tZen = smoothstep(0.20, 0.65, y);
+        col = mix(horizonCol, roseAmber, smoothstep(0.0, 0.09, y));
+        col = mix(col, upperSky, tUp);
+        col = mix(col, zenithCol, tZen);
+      } else {
+        col = mix(horizonCol, lowerPeach, smoothstep(0.0, -0.09, y));
+        col = mix(col, nadirCol, smoothstep(-0.07, -0.32, y));
+      }
+
+      // Subtle high-altitude golden-hour cirrus streaks
+      float cirrus = sin(d.x * 11.0 + d.z * 5.0 + uTime * 0.05) * sin(d.y * 26.0 - d.x * 4.0);
+      col += vec3(0.05, 0.03, 0.01) * smoothstep(0.2, 0.85, cirrus) * smoothstep(-0.02, 0.16, y) * smoothstep(0.32, 0.08, y);
+
+      // Luminous Golden-Hour Sun Disc & Controlled Atmospheric Halo (wide halo stays < bloom threshold so island stays crisp!)
+      float sunCos = max(dot(d, normalize(uSunDir)), 0.0);
+      col += vec3(0.42, 0.22, 0.07) * pow(sunCos, 5.0);
+      col += vec3(0.55, 0.38, 0.16) * pow(sunCos, 24.0);
+      col += vec3(0.95, 0.78, 0.46) * pow(sunCos, 140.0);
+      float disc = smoothstep(0.9982, 0.99945, sunCos);
+      col += vec3(2.4, 1.85, 1.05) * disc;
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+});
+scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+// Main Golden-Hour Sun Light (static 4096x4096 PCFSoftShadowMap rendered once!)
+const sunLight = new THREE.DirectionalLight(0xffc982, 2.85);
+sunLight.position.copy(SUN_DIR).multiplyScalar(180);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(4096, 4096);
+sunLight.shadow.camera.near = 40;
+sunLight.shadow.camera.far = 340;
+sunLight.shadow.camera.left = -82;
+sunLight.shadow.camera.right = 82;
+sunLight.shadow.camera.top = 70;
+sunLight.shadow.camera.bottom = -58;
+sunLight.shadow.bias = -0.00042;
+sunLight.shadow.normalBias = 0.032;
+sunLight.shadow.radius = 2.1;
+scene.add(sunLight);
+
+const hemiLight = new THREE.HemisphereLight(0x9bc8ff, 0xd88e4e, 0.84);
+scene.add(hemiLight);
+
+// Soft cool-blue sky fill from front-left so shadow planes of faces retain sculptural readability
+const fillLight = new THREE.DirectionalLight(0xb2d2ff, 0.44);
+fillLight.position.set(-95, 45, 110);
+scene.add(fillLight);
+
+// Warm golden rim-kick from sky sun direction to kiss granite needles, pine tips & chimney smoke
+const rimLight = new THREE.DirectionalLight(0xffb45c, 0.52);
+rimLight.position.copy(SKY_SUN_DIR).multiplyScalar(160);
+scene.add(rimLight);
+
+// Warm canyon bounce from below for floating island stalactites
+const underLight = new THREE.DirectionalLight(0xe59450, 0.42);
+underLight.position.set(-20, -100, 55);
+scene.add(underLight);
+
+// Blacksmith's Glowing Forge PointLight & Dynamite Blast PointLight
+const forgeLight = new THREE.PointLight(0xff6a14, 42.0, 26.0, 1.5);
+forgeLight.position.set(-0.5, 7.8, 35.0);
+scene.add(forgeLight);
+
+const blastLight = new THREE.PointLight(0xffaa33, 0.0, 38.0, 1.5);
+scene.add(blastLight);
+
+// Post-processing Composer with 4x MSAA HalfFloat RenderTarget + Subtle Controlled Bloom + ACES OutputPass
+const msaaTarget = new THREE.WebGLRenderTarget(WIDTH, HEIGHT, {
+  type: THREE.HalfFloatType,
+  samples: 4,
+});
+const composer = new EffectComposer(renderer, msaaTarget);
+composer.setSize(WIDTH, HEIGHT);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(WIDTH, HEIGHT), 0.22, 0.42, 0.98);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+if (!FIXED_CAPTURE) {
+  window.addEventListener('resize', () => {
+    WIDTH = Math.max(64, window.innerWidth);
+    HEIGHT = Math.max(64, window.innerHeight);
+    camera.aspect = WIDTH / HEIGHT;
+    camera.updateProjectionMatrix();
+    renderer.setSize(WIDTH, HEIGHT, false);
+    composer.setSize(WIDTH, HEIGHT);
+    bloomPass.resolution.set(WIDTH, HEIGHT);
+  });
+}
+
+// ============================================================================
+// 2. CHUNKY BEVELED VOXEL MATERIAL (Micro-bevel Normals + Anti-Aliasing + AO)
+// ============================================================================
+function createVoxelMaterial({ roughness = 0.83, metalness = 0.03, bevelStrength = 0.54, emissive = 0x000000, emissiveIntensity = 0.0 } = {}) {
+  const mat = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness,
+    metalness,
+    emissive: new THREE.Color(emissive),
+    emissiveIntensity,
+  });
+
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uBevelStrength = { value: bevelStrength };
+
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        /* glsl */`
+        #include <common>
+        attribute vec2 aFaceUv;
+        attribute vec4 aEdgeMask;
+        attribute float aAO;
+        varying vec2 vFaceUv;
+        varying vec4 vEdgeMask;
+        varying float vAO;
+        varying vec3 vViewT;
+        varying vec3 vViewB;
+
+        vec3 getVoxelFaceT(vec3 n) {
+          if (abs(n.z) > 0.5) return vec3(sign(n.z), 0.0, 0.0);
+          if (abs(n.x) > 0.5) return vec3(0.0, 0.0, -sign(n.x));
+          return vec3(1.0, 0.0, 0.0);
+        }
+        vec3 getVoxelFaceB(vec3 n) {
+          if (abs(n.y) > 0.5) return vec3(0.0, 0.0, -sign(n.y));
+          return vec3(0.0, 1.0, 0.0);
+        }
+        `
+      )
+      .replace(
+        '#include <beginnormal_vertex>',
+        /* glsl */`
+        #include <beginnormal_vertex>
+        vec3 objT = getVoxelFaceT(normal);
+        vec3 objB = getVoxelFaceB(normal);
+        #ifdef USE_INSTANCING
+          objT = normalize(mat3(instanceMatrix) * objT);
+          objB = normalize(mat3(instanceMatrix) * objB);
+        #endif
+        vViewT = normalize(normalMatrix * objT);
+        vViewB = normalize(normalMatrix * objB);
+        vFaceUv = aFaceUv;
+        vEdgeMask = aEdgeMask;
+        vAO = aAO;
+        `
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        /* glsl */`
+        #include <common>
+        uniform float uBevelStrength;
+        varying vec2 vFaceUv;
+        varying vec4 vEdgeMask;
+        varying float vAO;
+        varying vec3 vViewT;
+        varying vec3 vViewB;
+        `
+      )
+      .replace(
+        '#include <normal_fragment_maps>',
+        /* glsl */`
+        #include <normal_fragment_maps>
+        float uvDeriv = max(fwidth(vFaceUv.x), fwidth(vFaceUv.y));
+        float aaFade = 1.0 - smoothstep(0.18, 0.58, uvDeriv);
+        float bw = clamp(0.14 + uvDeriv * 0.35, 0.14, 0.28);
+
+        float bL = smoothstep(bw, 0.0, vFaceUv.x) * vEdgeMask.x;
+        float bR = smoothstep(bw, 0.0, 1.0 - vFaceUv.x) * vEdgeMask.y;
+        float bB = smoothstep(bw, 0.0, vFaceUv.y) * vEdgeMask.z;
+        float bT = smoothstep(bw, 0.0, 1.0 - vFaceUv.y) * vEdgeMask.w;
+
+        vec3 bevelOffset = (vViewT * (bR - bL) + vViewB * (bT - bB)) * (uBevelStrength * aaFade);
+        normal = normalize(normal + bevelOffset);
+        `
+      )
+      .replace(
+        '#include <lights_fragment_end>',
+        /* glsl */`
+        #include <lights_fragment_end>
+        float uvD2 = max(fwidth(vFaceUv.x), fwidth(vFaceUv.y));
+        float seamFade = 1.0 - smoothstep(0.14, 0.45, uvD2);
+        float edgeDist = min(min(vFaceUv.x, 1.0 - vFaceUv.x), min(vFaceUv.y, 1.0 - vFaceUv.y));
+        float seamDark = mix(1.0 - 0.082 * seamFade, 1.0, smoothstep(0.0, 0.075, edgeDist));
+
+        vec3 aoTint = mix(vec3(0.22, 0.17, 0.19), vec3(1.0), vAO);
+        reflectedLight.indirectDiffuse *= aoTint * seamDark;
+        reflectedLight.indirectSpecular *= vAO;
+        reflectedLight.directDiffuse *= mix(0.40, 1.0, vAO) * seamDark;
+        `
+      );
+  };
+
+  return mat;
+}
+
+const coarseVoxelMat = createVoxelMaterial({ roughness: 0.83, metalness: 0.03, bevelStrength: 0.56 });
+const fineFaceVoxelMat = createVoxelMaterial({ roughness: 0.76, metalness: 0.04, bevelStrength: 0.42 });
+const waterVoxelMat = createVoxelMaterial({ roughness: 0.16, metalness: 0.14, bevelStrength: 0.28 });
+const glowForgeMat = createVoxelMaterial({
+  roughness: 0.35,
+  metalness: 0.0,
+  bevelStrength: 0.3,
+  emissive: 0xff6b12,
+  emissiveIntensity: 3.8,
+});
+
+// ============================================================================
+// 3. SDF PRIMITIVES & THE FOUR PRESIDENTS (HERO 3x+ FINER SCULPTURE)
+// ============================================================================
+function smin(a, b, k) {
+  const h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+function smax(a, b, k) {
+  return -smin(-a, -b, k);
+}
+function ssub(base, cut, k) {
+  return smax(base, -cut, k);
+}
+
+function sdSphere(px, py, pz, cx, cy, cz, r) {
+  return Math.hypot(px - cx, py - cy, pz - cz) - r;
+}
+
+function sdEllipsoid(px, py, pz, cx, cy, cz, rx, ry, rz) {
+  const dx = (px - cx) / rx, dy = (py - cy) / ry, dz = (pz - cz) / rz;
+  const k0 = Math.hypot(dx, dy, dz);
+  if (k0 < 1e-6) return -Math.min(rx, ry, rz);
+  const dx2 = (px - cx) / (rx * rx), dy2 = (py - cy) / (ry * ry), dz2 = (pz - cz) / (rz * rz);
+  const k1 = Math.hypot(dx2, dy2, dz2);
+  return (k0 * (k0 - 1.0)) / k1;
+}
+
+function sdCapsule(px, py, pz, ax, ay, az, bx, by, bz, r) {
+  const pax = px - ax, pay = py - ay, paz = pz - az;
+  const bax = bx - ax, bay = by - ay, baz = bz - az;
+  const h = clamp((pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz), 0.0, 1.0);
+  return Math.hypot(pax - bax * h, pay - bay * h, paz - baz * h) - r;
+}
+
+function sdTaperedCapsule(px, py, pz, ax, ay, az, bx, by, bz, ra, rb) {
+  const pax = px - ax, pay = py - ay, paz = pz - az;
+  const bax = bx - ax, bay = by - ay, baz = bz - az;
+  const h = clamp((pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz), 0.0, 1.0);
+  return Math.hypot(pax - bax * h, pay - bay * h, paz - baz * h) - mix(ra, rb, h);
+}
+
+function sdRoundBox(px, py, pz, cx, cy, cz, bx, by, bz, r) {
+  const qx = Math.abs(px - cx) - bx;
+  const qy = Math.abs(py - cy) - by;
+  const qz = Math.abs(pz - cz) - bz;
+  const out = Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0));
+  const inn = Math.min(Math.max(qx, Math.max(qy, qz)), 0.0);
+  return out + inn - r;
+}
+
+function sdOvalRingXY(px, py, pz, cx, cy, cz, rx, ry, tubeR) {
+  const dx = (px - cx) / rx;
+  const dy = (py - cy) / ry;
+  const len = Math.hypot(dx, dy);
+  const radialDist = (len - 1.0) * (0.5 * (rx + ry));
+  return Math.hypot(radialDist, pz - cz) - tubeR;
+}
+
+function worldToHeadLocal(wx, wy, wz, cfg) {
+  const dx = (wx - cfg.cx) / cfg.scale;
+  const dy = (wy - cfg.cy) / (cfg.scale * (cfg.yStretch || 1.0));
+  const dz = (wz - cfg.cz) / cfg.scale;
+  const x1 = dx * cfg.cosYaw - dz * cfg.sinYaw;
+  const z1 = dx * cfg.sinYaw + dz * cfg.cosYaw;
+  const lx = x1;
+  const ly = dy * cfg.cosPitch - z1 * cfg.sinPitch;
+  const lz = dy * cfg.sinPitch + z1 * cfg.cosPitch;
+  return { lx, ly, lz };
+}
+
+// Monumental Hero Scale & Authentic Mount Rushmore Placement
+const PRESIDENTS = [
+  {
+    id: 'washington',
+    cx: -20.2, cy: 29.8, cz: 10.2,
+    yaw: 11.0 * Math.PI / 180,
+    pitch: -1.5 * Math.PI / 180,
+    scale: 1.28,
+    yStretch: 1.0,
+    gazeX: 0.06, gazeY: 0.0,
+  },
+  {
+    id: 'jefferson',
+    cx: -6.8, cy: 30.6, cz: 7.0,
+    yaw: -14.5 * Math.PI / 180,
+    pitch: 10.5 * Math.PI / 180,
+    scale: 1.20,
+    yStretch: 1.03,
+    gazeX: -0.05, gazeY: 0.06,
+  },
+  {
+    id: 'roosevelt',
+    cx: 5.0, cy: 28.4, cz: 3.1, // Recessed deep into the granite cleft between Jefferson & Lincoln!
+    yaw: -5.5 * Math.PI / 180,
+    pitch: -1.0 * Math.PI / 180,
+    scale: 1.19,
+    yStretch: 0.98,
+    gazeX: -0.04, gazeY: 0.0,
+  },
+  {
+    id: 'lincoln',
+    cx: 18.0, cy: 29.4, cz: 8.6,
+    yaw: -18.0 * Math.PI / 180,
+    pitch: -2.0 * Math.PI / 180,
+    scale: 1.23,
+    yStretch: 1.15,
+    gazeX: -0.06, gazeY: -0.02,
+  },
+];
+for (const p of PRESIDENTS) {
+  p.cosYaw = Math.cos(p.yaw);
+  p.sinYaw = Math.sin(p.yaw);
+  p.cosPitch = Math.cos(p.pitch);
+  p.sinPitch = Math.sin(p.pitch);
+}
+
+// Classical Gutzon Borglum Portraiture SDF for each President
+function evalPresidentSDF(lx, ly, lz, p) {
+  const id = p.id;
+  const ax = Math.abs(lx);
+  let recess = 0.0;
+  let featureType = 0; // 0: carved granite, 1: sunlit pupil peg, 2: crisp pince-nez rim/bridge, 3: cheek mole, 4: warm sculpted hair crown
+
+  const boundR = Math.hypot(lx, ly + 0.8, lz);
+  if (boundR > 13.2) return { d: boundR - 9.5, recess: 0.0, featureType: 0 };
+
+  // 1. Smooth Anatomical Cranium, Rounded Frontal Dome & Mandible Arch
+  const cranW = id === 'washington' ? 3.88 : id === 'roosevelt' ? 4.02 : id === 'lincoln' ? 3.44 : 3.60;
+  const cranH = id === 'lincoln' ? 4.92 : 4.58;
+  let d = sdEllipsoid(lx, ly, lz, 0.0, 2.08, -0.35, cranW, cranH, 4.45);
+
+  const fhW = id === 'lincoln' ? 3.12 : id === 'washington' ? 3.44 : 3.26;
+  const forehead = sdEllipsoid(lx, ly, lz, 0.0, 3.05, 1.32, fhW, 2.65, 2.52);
+  d = smin(d, forehead, 0.78);
+
+  // Convex Mid-Face / Maxilla Barrel
+  const muzzleW = id === 'washington' ? 2.84 : id === 'roosevelt' ? 3.04 : id === 'lincoln' ? 2.42 : 2.62;
+  const muzzle = sdEllipsoid(lx, ly, lz, 0.0, -1.82, 1.96, muzzleW, 2.42, 2.26);
+  d = smin(d, muzzle, 0.72);
+
+  // Strong Jawline & Chin Boss
+  const jawAngleX = id === 'washington' ? 3.44 : id === 'roosevelt' ? 3.48 : id === 'lincoln' ? 2.68 : 2.86;
+  const chinW = id === 'washington' ? 1.42 : id === 'roosevelt' ? 1.36 : id === 'lincoln' ? 0.96 : 1.04;
+  const chinY = id === 'lincoln' ? -4.56 : -4.36;
+  const chinZ = id === 'washington' ? 3.92 : id === 'jefferson' ? 3.78 : id === 'roosevelt' ? 3.72 : 3.68;
+
+  const jawSide = sdTaperedCapsule(ax, ly, lz, jawAngleX, -2.50, 0.78, chinW, chinY, chinZ - 0.30, 1.20, 0.98);
+  d = smin(d, jawSide, 0.66);
+  const chinBoss = sdEllipsoid(lx, ly, lz, 0.0, chinY + 0.14, chinZ - 0.06, chinW + 0.32, 0.82, 0.88);
+  d = smin(d, chinBoss, 0.50);
+
+  // Neck & Rear Granite Anchor blending back into cliff (-Z)
+  const neck = sdTaperedCapsule(lx, ly, lz, 0.0, -3.2, -0.5, 0.0, -8.6, -1.5, 3.18, 4.15);
+  const rearAnchor = sdEllipsoid(lx, ly, lz, 0.0, 1.2, -2.8, cranW + 0.65, 5.9, 3.65);
+  d = smin(d, Math.min(neck, rearAnchor), 0.95);
+
+  // 2. Sculpted Cheekbones (Zygomatic Arches) & Buccal Cheek Hollows
+  const cheekOutX = id === 'lincoln' ? 3.40 : id === 'roosevelt' ? 3.76 : 3.52;
+  const zygoma = sdTaperedCapsule(ax, ly, lz, 1.44, 0.40, 3.36, cheekOutX, 0.74, 1.24, 0.92, 0.78);
+  d = smin(d, zygoma, 0.56);
+
+  if (id === 'lincoln' || id === 'jefferson' || id === 'washington') {
+    const hRad = id === 'lincoln' ? 1.04 : id === 'jefferson' ? 0.66 : 0.58;
+    const hZ = id === 'lincoln' ? 3.12 : 3.42;
+    const hollow = sdEllipsoid(ax, ly, lz, 2.78, -1.58, hZ, hRad, 1.38, 0.80);
+    if (hollow < 0.40) {
+      recess = Math.max(recess, smoothstep(0.40, -0.25, hollow) * (id === 'lincoln' ? 0.68 : 0.26));
+    }
+    d = ssub(d, hollow, 0.46);
+  }
+
+  // 3. Heavy Overhanging Supraorbital Brow Ridges & Glabella
+  const browR = id === 'lincoln' ? 0.76 : id === 'roosevelt' ? 0.72 : 0.64;
+  const browInnerY = id === 'lincoln' ? 2.22 : id === 'roosevelt' ? 2.04 : 2.14;
+  const browOuterY = id === 'lincoln' ? 1.88 : 2.00;
+  const browSeg = sdTaperedCapsule(ax, ly, lz, 0.44, browInnerY, 3.84, 2.86, browOuterY, 2.66, browR, browR * 0.80);
+  const glabella = sdEllipsoid(lx, ly, lz, 0.0, 2.16, 3.74, 0.70, 0.56, 0.64);
+  d = smin(d, Math.min(browSeg, glabella), 0.36);
+
+  // Subtle vertical frown creases on glabella for heroic intensity
+  if (id === 'lincoln' || id === 'roosevelt' || id === 'washington') {
+    const frown = sdCapsule(ax, ly, lz, 0.34, 2.02, 3.92, 0.38, 2.68, 3.82, 0.11);
+    if (frown < 0.18) recess = Math.max(recess, 0.44);
+    d = ssub(d, frown, 0.06);
+  }
+
+  // 4. Deep Orbital Shadow + Horizontal Almond Eyelids + Borglum's Upper-Offset Granite Pupil Peg!
+  const eyeX = 1.58, eyeY = 1.22, eyeZ = 3.14;
+  const socketCut = sdEllipsoid(ax, ly, lz, eyeX, eyeY + 0.18, eyeZ + 0.48, 0.98, 0.56, 0.84);
+  if (socketCut < 0.32) {
+    recess = Math.max(recess, smoothstep(0.32, -0.22, socketCut) * 0.72);
+  }
+  d = ssub(d, socketCut, 0.22);
+
+  // Convex Eyeball + Distinct Horizontal Almond Upper & Lower Eyelids
+  const eyeball = sdEllipsoid(ax, ly, lz, eyeX, eyeY - 0.04, eyeZ - 0.18, 0.86, 0.72, 0.84);
+  d = smin(d, eyeball, 0.15);
+  const upperLid = sdCapsule(ax, ly, lz, eyeX - 0.74, eyeY + 0.06, eyeZ + 0.14, eyeX + 0.74, eyeY - 0.02, eyeZ - 0.08, 0.24);
+  const upperArch = sdEllipsoid(ax, ly, lz, eyeX, eyeY + 0.24, eyeZ + 0.26, 0.74, 0.22, 0.40);
+  const lowerLid = sdCapsule(ax, ly, lz, eyeX - 0.70, eyeY - 0.28, eyeZ + 0.08, eyeX + 0.70, eyeY - 0.24, eyeZ - 0.10, 0.19);
+  d = smin(d, Math.min(upperLid, upperArch, lowerLid), 0.13);
+
+  // Horizontal Almond Iris Cavity + Borglum's Granite Pupil Peg tucked under upper eyelid!
+  for (const side of [-1, 1]) {
+    const ex = side * eyeX + p.gazeX;
+    const ey = eyeY + p.gazeY;
+    const irisCup = sdEllipsoid(lx, ly, lz, ex, ey - 0.05, eyeZ + 0.40, 0.37, 0.24, 0.42);
+    if (irisCup < 0.20) {
+      recess = Math.max(recess, smoothstep(0.20, -0.10, irisCup) * 0.90);
+    }
+    d = ssub(d, irisCup, 0.05);
+
+    // Granite Pupil Peg hanging from upper-sunlit quadrant of the iris pocket
+    const peg = sdRoundBox(lx, ly, lz, ex + 0.05, ey + 0.05, eyeZ + 0.30, 0.135, 0.095, 0.28, 0.03);
+    if (peg < 0.13) {
+      featureType = 1;
+      recess = 0.0;
+    }
+    d = Math.min(d, peg);
+  }
+
+  // 5. Defined Classical Nose: Narrow Root -> Dorsum Bridge -> Tip -> Alar Wings & Nostrils
+  const noseLenY = id === 'lincoln' ? -1.32 : id === 'washington' ? -1.20 : -1.10;
+  const noseTipZ = id === 'washington' ? 5.10 : id === 'lincoln' ? 5.06 : id === 'jefferson' ? 4.96 : 4.82;
+  const noseRoot = sdTaperedCapsule(lx, ly, lz, 0.0, 1.68, 3.46, 0.0, 0.48, 4.26, 0.35, 0.43);
+  const noseBridge = sdTaperedCapsule(lx, ly, lz, 0.0, 0.52, 4.24, 0.0, noseLenY, noseTipZ, 0.43, 0.56);
+  d = smin(d, Math.min(noseRoot, noseBridge), 0.28);
+
+  if (id === 'washington' || id === 'lincoln') {
+    const dorsalBump = sdEllipsoid(lx, ly, lz, 0.0, 0.38, 4.44, 0.40, 0.58, 0.32);
+    d = smin(d, dorsalBump, 0.24);
+  }
+
+  const alarW = id === 'roosevelt' ? 0.86 : 0.74;
+  const alar = sdEllipsoid(ax, ly, lz, alarW, noseLenY - 0.04, noseTipZ - 0.72, 0.50, 0.46, 0.56);
+  const columella = sdCapsule(lx, ly, lz, 0.0, noseLenY - 0.04, noseTipZ - 0.16, 0.0, noseLenY - 0.34, noseTipZ - 0.86, 0.24);
+  d = smin(d, Math.min(alar, columella), 0.22);
+
+  // Crisp Dark-Shaded Nostrils
+  const nostril = sdEllipsoid(ax, ly, lz, alarW * 0.62, noseLenY - 0.32, noseTipZ - 0.60, 0.26, 0.22, 0.40);
+  if (nostril < 0.19) {
+    recess = Math.max(recess, smoothstep(0.19, -0.09, nostril) * 0.94);
+  }
+  d = ssub(d, nostril, 0.06);
+
+  // 6. Curved Nasolabial Folds, Philtrum & Dignified Closed Classical Lips
+  const nlFoldMid = sdCapsule(ax, ly, lz, alarW + 0.26, noseLenY - 0.04, noseTipZ - 0.86, 1.48, -1.95, 3.88, 0.14);
+  const nlFoldLow = sdCapsule(ax, ly, lz, 1.48, -1.95, 3.88, 1.82, -2.85, 3.52, 0.13);
+  const nlFold = Math.min(nlFoldMid, nlFoldLow);
+  if (nlFold < 0.22) {
+    recess = Math.max(recess, smoothstep(0.22, -0.04, nlFold) * 0.66);
+  }
+  d = ssub(d, nlFold, 0.09);
+
+  const mouthY = -2.62;
+  const mouthCornerY = id === 'washington' ? -2.78 : id === 'lincoln' ? -2.70 : -2.64;
+  const mouthZ = 4.10;
+
+  if (id !== 'roosevelt') {
+    const upperLip = sdTaperedCapsule(ax, ly, lz, 0.0, mouthY + 0.20, mouthZ + 0.08, 1.36, mouthCornerY + 0.04, 3.48, 0.34, 0.22);
+    d = smin(d, upperLip, 0.18);
+    const philtrum = sdCapsule(lx, ly, lz, 0.0, noseLenY - 0.40, mouthZ + 0.26, 0.0, mouthY + 0.28, mouthZ + 0.32, 0.16);
+    if (philtrum < 0.18) recess = Math.max(recess, 0.36);
+    d = ssub(d, philtrum, 0.09);
+
+    const mouthLine = sdCapsule(ax, ly, lz, 0.0, mouthY, mouthZ + 0.30, 1.34, mouthCornerY, 3.56, 0.095);
+    if (mouthLine < 0.18) {
+      recess = Math.max(recess, smoothstep(0.18, -0.03, mouthLine) * 0.82);
+    }
+    d = ssub(d, mouthLine, 0.05);
+  }
+
+  const lowerLipR = id === 'lincoln' ? 0.38 : id === 'roosevelt' ? 0.36 : 0.33;
+  const lowerLipY = id === 'roosevelt' ? -2.84 : mouthY - 0.22;
+  const lowerLip = sdTaperedCapsule(ax, ly, lz, 0.0, lowerLipY, mouthZ + 0.04, 1.18, (id === 'roosevelt' ? -2.88 : mouthCornerY - 0.04), 3.50, lowerLipR, 0.20);
+  d = smin(d, lowerLip, 0.18);
+
+  // Mentolabial crease between lower lip and chin boss
+  const mentoCrease = sdCapsule(ax, ly, lz, 0.0, lowerLipY - 0.44, chinZ + 0.10, 0.85, lowerLipY - 0.50, chinZ - 0.12, 0.12);
+  if (mentoCrease < 0.18 && id !== 'lincoln') recess = Math.max(recess, 0.34);
+  d = ssub(d, mentoCrease, 0.07);
+
+  // ==========================================================================
+  // 7. PRESIDENT-SPECIFIC SIGNATURE ICONIC SILHOUETTES & DETAILS
+  // ==========================================================================
+  if (id === 'washington') {
+    // High swept-back hair dome & softly rounded hairline
+    const topHair = sdEllipsoid(lx, ly, lz, 0.0, 4.18, -0.50, 4.18, 3.30, 4.65);
+    const crownSweep = sdEllipsoid(lx, ly, lz, 0.0, 5.10, 0.85, 3.45, 1.65, 2.85);
+    const templeHair = sdTaperedCapsule(ax, ly, lz, 3.38, 3.55, 1.55, 4.35, 1.70, 2.05, 0.78, 0.92);
+    d = smin(d, Math.min(topHair, crownSweep, templeHair), 0.48);
+
+    // Subtle crease separating Washington's broad jaw/cheek from side wig curls
+    const wigCheekCrease = sdCapsule(ax, ly, lz, 3.66, 1.70, 2.72, 3.76, -1.80, 2.32, 0.16);
+    if (wigCheekCrease < 0.22) recess = Math.max(recess, 0.42);
+    d = ssub(d, wigCheekCrease, 0.07);
+
+    // ROLLED WIG CURLS AT THE SIDES: 3 plump curved horizontal powdered-wig rolls flaring out on BOTH sides!
+    const curlYs = [1.32, 0.06, -1.18];
+    for (let i = 0; i < 3; i++) {
+      const cy = curlYs[i];
+      const cxOut = 4.46 + i * 0.16;
+      const rollFront = sdTaperedCapsule(ax, ly, lz, cxOut - 0.18, cy + 0.05, 2.72 - i * 0.06, cxOut + 0.12, cy - 0.06, 0.65, 0.74, 0.84);
+      const rollBack  = sdTaperedCapsule(ax, ly, lz, cxOut + 0.12, cy - 0.06, 0.65, cxOut - 0.14, cy - 0.22, -1.90, 0.84, 0.72);
+      d = smin(d, Math.min(rollFront, rollBack), 0.14);
+      if (i < 2) {
+        const gFront = sdCapsule(ax, ly, lz, cxOut - 0.40, cy - 0.60, 3.18, cxOut + 0.64, cy - 0.62, 2.35, 0.19);
+        const gSide  = sdCapsule(ax, ly, lz, cxOut + 0.64, cy - 0.62, 2.35, cxOut + 0.34, cy - 0.78, -1.75, 0.20);
+        const groove = Math.min(gFront, gSide);
+        if (groove < 0.25) recess = Math.max(recess, 0.56);
+        d = ssub(d, groove, 0.07);
+      }
+    }
+    const underWig = sdCapsule(ax, ly, lz, 4.12, -1.88, 2.72, 4.82, -1.94, -1.25, 0.19);
+    if (underWig < 0.24) recess = Math.max(recess, 0.48);
+    d = ssub(d, underWig, 0.07);
+
+    // Colonial Coat Collar, Broad Lapels & Ruffled Cravat carved below Washington's strong jaw
+    const chestMass = sdEllipsoid(lx, ly, lz, 0.0, -7.2, 0.88, 5.3, 3.0, 3.15);
+    const collarStand = sdCapsule(ax, ly, lz, 3.18, -4.42, 1.58, 2.06, -6.32, 3.18, 0.78);
+    const lapel = sdTaperedCapsule(ax, ly, lz, 2.26, -5.82, 3.18, 2.88, -8.45, 3.08, 0.86, 1.08);
+    const cravat = sdTaperedCapsule(lx, ly, lz, 0.0, -5.12, 3.08, 0.0, -8.25, 3.48, 0.94, 1.20);
+    d = smin(d, Math.min(chestMass, collarStand, lapel, cravat), 0.38);
+    const lapelNotch = sdCapsule(ax, ly, lz, 1.28, -5.62, 3.76, 1.64, -8.40, 3.86, 0.18);
+    if (lapelNotch < 0.22) recess = Math.max(recess, 0.58);
+    d = ssub(d, lapelNotch, 0.08);
+  }
+
+  else if (id === 'jefferson') {
+    // THICK WAVY HAIR SWEPT BACK: Flowing sinusoidal S-curved locks framing temples & sides (NO harsh stripes!)
+    const crownHair = sdEllipsoid(lx, ly, lz, 0.0, 4.22, -0.42, 4.16, 3.38, 4.56);
+    const frontWave = sdTaperedCapsule(ax, ly, lz, 0.50, 4.68, 2.72, 3.42, 3.52, 2.28, 0.74, 0.80);
+    d = smin(d, Math.min(crownHair, frontWave), 0.44);
+
+    for (let i = 0; i < 4; i++) {
+      const wy = 2.96 - i * 1.04;
+      const wxFront = 3.44 + i * 0.14;
+      const wzFront = 2.68 - i * 0.22;
+      // Curved 2-segment S-wave lock sweeping upward-then-back cleanly from temple!
+      const lockA = sdTaperedCapsule(ax, ly, lz, wxFront, wy, wzFront, wxFront + 0.68, wy + 0.18, 0.45, 0.72, 0.84);
+      const lockB = sdTaperedCapsule(ax, ly, lz, wxFront + 0.68, wy + 0.18, 0.45, 4.48, wy - 0.58, -2.25, 0.84, 0.76);
+      d = smin(d, smin(lockA, lockB, 0.22), 0.22);
+
+      if (i < 3) {
+        const grooveA = sdCapsule(ax, ly, lz, wxFront + 0.38, wy - 0.50, wzFront + 0.12, wxFront + 0.92, wy - 0.34, 0.40, 0.16);
+        const grooveB = sdCapsule(ax, ly, lz, wxFront + 0.92, wy - 0.34, 0.40, 4.72, wy - 1.05, -2.00, 0.17);
+        const waveFurrow = Math.min(grooveA, grooveB);
+        if (waveFurrow < 0.22) recess = Math.max(recess, smoothstep(0.22, -0.04, waveFurrow) * 0.42);
+        d = ssub(d, waveFurrow, 0.07);
+      }
+    }
+    const jCollar = sdTaperedCapsule(ax, ly, lz, 2.86, -4.42, 1.38, 1.44, -6.58, 2.98, 0.72, 0.68);
+    const jCravat = sdEllipsoid(lx, ly, lz, 0.0, -5.85, 2.92, 1.10, 1.15, 0.85);
+    d = smin(d, Math.min(jCollar, jCravat), 0.36);
+  }
+
+  else if (id === 'roosevelt') {
+    // THICK BUSHY WALRUS MOUSTACHE: Bold high-relief sweep covering upper lip & drooping past mouth corners!
+    const stacheCenter = sdEllipsoid(lx, ly, lz, 0.0, -1.94, 4.74, 1.54, 0.74, 0.94);
+    const stacheWing1 = sdTaperedCapsule(ax, ly, lz, 0.24, -1.90, 4.74, 1.82, -2.32, 4.28, 0.76, 0.68);
+    const stacheWing2 = sdTaperedCapsule(ax, ly, lz, 1.66, -2.28, 4.26, 2.64, -3.12, 3.58, 0.64, 0.46);
+    // Individual sculpted vertical moustache lock ridges for crisp volume
+    const stacheFlute = Math.sin(lx * 5.2) * 0.045;
+    const stache = smin(stacheCenter, smin(stacheWing1, stacheWing2, 0.24), 0.24) + stacheFlute;
+    if (stache < 0.24 && featureType === 0) {
+      recess = Math.max(recess, 0.12 + Math.abs(Math.sin(lx * 5.2)) * 0.18);
+    }
+    d = smin(d, stache, 0.13);
+
+    // Subtle upper moustache crease & compact shadow tuck right under center of moustache (NO wide frown slot!)
+    const upperStacheCrease = sdCapsule(ax, ly, lz, 0.78, -1.32, 4.54, 2.48, -2.38, 3.74, 0.13);
+    if (upperStacheCrease < 0.20 && featureType === 0) recess = Math.max(recess, 0.40);
+    d = ssub(d, upperStacheCrease, 0.05);
+
+    const underStache = sdCapsule(ax, ly, lz, 0.0, -2.62, 4.46, 1.12, -2.68, 4.02, 0.14);
+    if (underStache < 0.22 && featureType === 0) recess = Math.max(recess, 0.72);
+    d = ssub(d, underStache, 0.05);
+
+    // Keep lens interior around eye open and sunlit so pince-nez reads as slender spectacles, NEVER dark goggles!
+    const inLens = Math.hypot((ax - 1.58) / 0.96, (ly - 1.22) / 0.64);
+    if (inLens < 0.94 && featureType === 0 && recess < 0.80) {
+      recess *= 0.35;
+    }
+
+    // PINCE-NEZ GLASSES: Slender sculpted oval granite rims + prominent arched nose-clip spring bridge + cheek ribbon!
+    const rimL = sdOvalRingXY(lx, ly, lz, -1.58, 1.22, 3.92, 1.12, 0.78, 0.135);
+    const rimR = sdOvalRingXY(lx, ly, lz,  1.58, 1.22, 3.92, 1.12, 0.78, 0.135);
+    const bridge1 = sdCapsule(lx, ly, lz, -0.52, 1.44, 4.06, 0.0, 1.74, 4.42, 0.16);
+    const bridge2 = sdCapsule(lx, ly, lz,  0.0,  1.74, 4.42, 0.52, 1.44, 4.06, 0.16);
+    const noseClipL = sdSphere(lx, ly, lz, -0.48, 1.36, 4.08, 0.18);
+    const noseClipR = sdSphere(lx, ly, lz,  0.48, 1.36, 4.08, 0.18);
+    const glassesFrame = Math.min(rimL, rimR, bridge1, bridge2, noseClipL, noseClipR);
+    if (glassesFrame < 0.14 && featureType !== 1) {
+      featureType = 2;
+      recess = 0.0;
+    } else if (glassesFrame >= 0.14 && glassesFrame < 0.28 && featureType === 0) {
+      // Crisp delicate shadow outline hugging the sculpted pince-nez rim so it pops from full-island distance!
+      recess = Math.max(recess, smoothstep(0.28, 0.14, glassesFrame) * 0.52);
+    }
+    const cord = sdCapsule(lx, ly, lz, 2.68, 1.06, 3.54, 3.18, -2.35, 2.78, 0.13);
+    d = Math.min(d, glassesFrame, cord);
+
+    // Sculpted side-parted hair mass atop Roosevelt's head
+    const trHair = sdEllipsoid(lx, ly, lz, 0.0, 4.25, -0.15, 4.18, 2.95, 4.50);
+    const trWaveL = sdCapsule(lx, ly, lz, -3.45, 3.45, 1.85, -1.35, 4.72, 2.55, 0.72);
+    const trWaveR = sdCapsule(lx, ly, lz, -0.85, 4.82, 2.58,  3.45, 3.55, 1.85, 0.78);
+    d = smin(d, Math.min(trHair, trWaveL, trWaveR), 0.42);
+    const hairPart = sdCapsule(lx, ly, lz, -1.18, 4.85, 2.95, -1.45, 5.45, 0.45, 0.18);
+    if (hairPart < 0.24) recess = Math.max(recess, 0.56);
+    d = ssub(d, hairPart, 0.07);
+    if (ly > 3.58 + 0.28 * Math.cos(lx * 0.65) && featureType === 0) {
+      featureType = 4;
+    }
+  }
+
+  else if (id === 'lincoln') {
+    // THE MOLE ON HIS CHEEK: Borglum's iconic 16-inch hemispherical mole on Lincoln's right cheek (-X, sunlit cheek plane)!
+    const mole = sdSphere(lx, ly, lz, -1.48, -1.58, 4.02, 0.34);
+    if (mole < 0.14) {
+      featureType = 3;
+      recess = 0.0;
+    } else if (mole >= 0.14 && mole < 0.30 && featureType === 0) {
+      // Subtle shadow crease ringing the base of the raised granite mole
+      recess = Math.max(recess, smoothstep(0.30, 0.14, mole) * 0.46);
+    }
+    d = smin(d, mole, 0.06);
+
+    // CHIN-CURTAIN BEARD WITHOUT A MOUSTACHE:
+    // Upper lip, philtrum & lower lip stay 100% clean-shaven! Volumetric U-shaped beard locks wrap jawline & chin!
+    const sideburn = sdTaperedCapsule(ax, ly, lz, 3.32, 0.62, 1.18, 3.00, -2.90, 2.22, 0.60, 0.84);
+    const jawBeard = sdTaperedCapsule(ax, ly, lz, 2.94, -2.88, 2.24, 1.32, -5.18, 3.78, 0.88, 1.06);
+    const chinBeard = sdEllipsoid(lx, ly, lz, 0.0, -5.28, 3.60, 1.78, 1.44, 1.22);
+    const beardFlutes = Math.sin(lx * 4.4) * 0.055;
+    let beard = smin(sideburn, smin(jawBeard, chinBeard, 0.36), 0.28) + beardFlutes;
+
+    // Keep upper lip, mouth corners, and bare mentolabial patch directly under lower lip 100% clean-shaven!
+    const bareLipZone = sdEllipsoid(lx, ly, lz, 0.0, -2.44, 4.42, 2.08, 1.12, 1.34);
+    const bareUnderLip = sdEllipsoid(lx, ly, lz, 0.0, -3.34, 4.24, 0.90, 0.44, 0.72);
+    beard = ssub(beard, Math.min(bareLipZone, bareUnderLip), 0.10);
+
+    // Natural sculpted granite lock shading (clean chiselled locks, never muddy!)
+    if (beard < 0.22 && featureType === 0) {
+      const beardTex = Math.abs(Math.sin(lx * 4.4 + ly * 0.9)) * 0.18;
+      recess = Math.max(recess, 0.18 + beardTex);
+    }
+    d = smin(d, beard, 0.10);
+
+    // Tousled sculpted forelock wave & hair mass atop Lincoln's tall forehead + sculpted ear & collar
+    const lincHairBase = sdEllipsoid(lx, ly, lz, 0.0, 4.86, -0.35, 3.85, 3.08, 4.45);
+    const lincForelock1 = sdCapsule(lx, ly, lz, -2.28, 4.72, 2.72, 0.85, 5.32, 2.62, 0.76);
+    const lincForelock2 = sdCapsule(lx, ly, lz, 0.65, 5.12, 2.62, 2.95, 4.18, 1.94, 0.70);
+    const lincSideHair = sdCapsule(ax, ly, lz, 3.42, 3.68, 1.45, 3.58, 0.88, 0.55, 0.68);
+    const ear = sdEllipsoid(ax, ly, lz, 3.62, 0.62, -0.15, 0.44, 1.02, 0.66);
+    const lCollar = sdCapsule(ax, ly, lz, 2.84, -4.95, 1.65, 1.46, -7.18, 3.20, 0.74);
+    d = smin(d, Math.min(lincHairBase, lincForelock1, lincForelock2, lincSideHair, ear, lCollar), 0.36);
+  }
+
+  return { d: d * p.scale, recess: clamp(recess, 0.0, 1.0), featureType };
+}
+
+// ============================================================================
+// 4. IRREGULAR NATURAL SUMMIT, GRANITE NEEDLES & ORGANIC CLIFF SCULPT ENVELOPE
+// ============================================================================
+// Asymmetric Harney Peak Granite Needles & Rounded Summit Domes (irregular skyline, NEVER a box!)
+const GRANITE_NEEDLES = [
+  { x: -32.0, z: -2.0, baseY: 24.0, topY: 43.0, rBase: 5.6, rTop: 1.5 },
+  { x: -26.5, z: -6.5, baseY: 28.0, topY: 47.6, rBase: 6.5, rTop: 1.8 },
+  { x: -16.5, z: -8.5, baseY: 32.0, topY: 48.6, rBase: 8.8, rTop: 3.1 },
+  { x: -5.5,  z: -9.5, baseY: 31.0, topY: 46.5, rBase: 7.8, rTop: 2.7 },
+  { x:  6.0,  z: -11.0, baseY: 29.0, topY: 42.2, rBase: 7.2, rTop: 2.5 }, // Cleft saddle dip!
+  { x: 17.5,  z: -8.0, baseY: 31.0, topY: 47.2, rBase: 8.2, rTop: 2.7 },
+  { x: 26.8,  z: -3.5, baseY: 26.0, topY: 45.8, rBase: 5.8, rTop: 1.5 },
+  { x: 31.8,  z:  2.0, baseY: 22.0, topY: 39.8, rBase: 4.8, rTop: 1.3 },
+];
+
+function naturalMountainSDF(wx, wy, wz) {
+  let d = sdEllipsoid(wx, wy, wz, -1.0, 22.5, -9.5, 34.8, 22.8, 19.2);
+  const leftDome = sdEllipsoid(wx, wy, wz, -16.8, 25.2, -1.0, 17.4, 19.5, 12.8);
+  const rightDome = sdEllipsoid(wx, wy, wz, 18.4, 24.6, -1.2, 14.4, 18.8, 11.8);
+  d = smin(d, smin(leftDome, rightDome, 4.0), 4.0);
+
+  for (let i = 0; i < GRANITE_NEEDLES.length; i++) {
+    const nd = GRANITE_NEEDLES[i];
+    const needle = sdTaperedCapsule(wx, wy, wz, nd.x, nd.baseY, nd.z, nd.x + 0.4, nd.topY, nd.z + 0.3, nd.rBase, nd.rTop);
+    d = smin(d, needle, 2.4);
+  }
+
+  // Natural V-cleft saddle around Roosevelt (X ~ +5.0)
+  const naturalCleft = sdTaperedCapsule(wx, wy, wz, 5.0, 36.8, 8.5, 5.2, 20.0, 13.5, 5.8, 7.6);
+  d = ssub(d, naturalCleft, 2.8);
+
+  const crag = (fbm3(wx * 0.085, wy * 0.085, wz * 0.085, 3) - 0.5) * 3.6
+             + (fbm3(wx * 0.23, wy * 0.23, wz * 0.23, 2) - 0.5) * 1.15;
+  return d + crag;
+}
+
+// Organic 3D Sculpt Envelope so 3.33x finer face carving nests naturally into chunky coarse granite with ZERO rectangular seam!
+function evalFineSculptEnvelope(wx, wy, wz) {
+  const n = (fbm3(wx * 0.16 + 3.1, wy * 0.16 - 1.7, wz * 0.16 + 5.2, 2) - 0.5) * 3.2;
+  let minD = 1e6;
+  for (let i = 0; i < PRESIDENTS.length; i++) {
+    const p = PRESIDENTS[i];
+    const dEll = sdEllipsoid(wx, wy, wz, p.cx, p.cy - 0.8, p.cz + 5.4, 10.2, 10.6, 12.2);
+    if (dEll < minD) minD = dEll;
+  }
+  const ledgeEnv = sdRoundBox(wx, wy, wz, 1.0, 21.8, 10.8, 25.8, 4.0, 7.6, 2.4);
+  minD = smin(minD, ledgeEnv, 2.2) + n * 0.55;
+  return clamp(1.0 - smoothstep(-1.8, 1.8, minD), 0.0, 1.0);
+}
+
+// Organic Arched Face-Bay + Four Presidents + 1939 Unfinished Carving Blocks
+function evalRushmoreFineZone(wx, wy, wz) {
+  const dCliff = naturalMountainSDF(wx, wy, wz);
+  const cragWave = (fbm3(wx * 0.18, wy * 0.18, wz * 0.18, 2) - 0.5) * 1.8;
+
+  // Carve rounded OVOID alcoves strictly in front of each face so crowns blend organically into the cliff!
+  let bayCarve = 1e6;
+  for (let i = 0; i < PRESIDENTS.length; i++) {
+    const p = PRESIDENTS[i];
+    const bay = sdEllipsoid(wx, wy, wz, p.cx, p.cy - 0.6, p.cz + 8.8, 8.2, 8.6, 7.0) + cragWave * 0.45;
+    bayCarve = smin(bayCarve, bay, 2.2);
+  }
+  // Flared V-cleft sightline channel in front of Roosevelt
+  const cleftFlare = sdTaperedCapsule(wx, wy, wz, 5.0, 28.2, 7.4, 5.0, 27.5, 17.8, 5.4, 11.2);
+  bayCarve = smin(bayCarve, cleftFlare, 1.8);
+
+  // Preserve natural overhanging cliff rock above irregular crown contour (dips slightly in Roosevelt's cleft!)
+  const cleftDip = 1.7 * Math.exp(-Math.pow((wx - 5.0) / 6.2, 2));
+  const crownLine = 36.4 - cleftDip + Math.sin(wx * 0.14) * 1.3 + cragWave * 0.90;
+  const topKeep = smoothstep(crownLine - 1.8, crownLine + 1.8, wy);
+  let d = ssub(dCliff, bayCarve + topKeep * 4.2, 1.65);
+
+  let bestHeadD = 1e6;
+  let bestRecess = 0.0;
+  let bestFeatureType = 0;
+
+  for (let i = 0; i < PRESIDENTS.length; i++) {
+    const p = PRESIDENTS[i];
+    if (Math.abs(wx - p.cx) > 12.8 || Math.abs(wy - p.cy) > 14.8) continue;
+    const { lx, ly, lz } = worldToHeadLocal(wx, wy, wz, p);
+    const res = evalPresidentSDF(lx, ly, lz, p);
+    if (res.d < bestHeadD) {
+      bestHeadD = res.d;
+      bestRecess = res.recess;
+      bestFeatureType = res.featureType;
+    }
+    d = smin(d, res.d, 0.82);
+  }
+
+  // 1939 Unfinished Stepped Granite Ledges & Drill-Honeycomb Buttresses
+  const quantX = Math.round(wx * 0.75) / 0.75;
+  const quantY = Math.round(wy * 0.85) / 0.85;
+  const stepNoise = hash3i(Math.floor(wx * 0.8), Math.floor(wy * 0.9), 17);
+
+  const workLedge = sdRoundBox(wx, wy, wz, 1.0, 19.3, 9.7 + (stepNoise - 0.5) * 0.9, 24.8, 2.0, 3.2, 0.25);
+  const roughButtressR = sdRoundBox(quantX, quantY, wz, 25.5, 24.8, 7.8 + (stepNoise - 0.5) * 1.2, 2.5, 4.4, 2.8, 0.15);
+  const roughButtressC = sdRoundBox(quantX, quantY, wz, -0.8, 21.6, 8.2 + (stepNoise - 0.5) * 1.1, 2.2, 2.1, 2.4, 0.15);
+  const roughBlocks = Math.min(workLedge, roughButtressR, roughButtressC);
+  const prevD = d;
+  d = smin(d, roughBlocks, 0.45);
+
+  // Smoothly transition from pale carved granite on the faces into warm Harney Peak cliff granite at the crown & sides!
+  const crownFade = smoothstep(crownLine + 0.6, crownLine - 1.6, wy);
+  let rockType = 0;
+  if (bestHeadD < 0.65 && crownFade > 0.35) {
+    rockType = 1;
+  } else if (roughBlocks < 0.55 || (bayCarve < 0.75 && crownFade > 0.45 && prevD > -1.0)) {
+    rockType = 2;
+  }
+
+  return { d, rockType, crownFade, recess: bestRecess, featureType: bestFeatureType };
+}
+
+// ============================================================================
+// 5. FLOATING ISLAND SHAPE, ROAD SPLINE, BLUE LAKE, CREEK & WATERFALL
+// ============================================================================
+function islandMaxRadius(angle) {
+  let r = 56.0
+    + 5.0 * Math.cos(angle * 2.0 - 0.4)
+    + 3.6 * Math.sin(angle * 3.0 + 0.9)
+    + 2.4 * Math.cos(angle * 5.0 - 1.2)
+    + 1.9 * Math.sin(angle * 7.0 + 0.3);
+  r *= 1.0 + 0.09 * Math.abs(Math.sin(angle));
+  if (Math.cos(angle) < 0) r *= 0.86;
+  return r;
+}
+
+const ROAD_POINTS = [
+  new THREE.Vector3(51, 7.2, 31),
+  new THREE.Vector3(42, 8.4, 41),
+  new THREE.Vector3(28, 8.2, 44),
+  new THREE.Vector3(14, 6.4, 44),
+  new THREE.Vector3(0,  5.6, 42),
+  new THREE.Vector3(-15, 5.4, 40),
+  new THREE.Vector3(-31, 5.6, 36), // Timber bridge over creek!
+  new THREE.Vector3(-45, 7.6, 26),
+  new THREE.Vector3(-48, 10.4, 9),
+  new THREE.Vector3(-42, 13.8, -5),
+  new THREE.Vector3(-32, 17.2, 3),
+  new THREE.Vector3(-26, 19.2, 11),
+];
+const roadCurve = new THREE.CatmullRomCurve3(ROAD_POINTS, false, 'centripetal', 0.5);
+const ROAD_SAMPLES = 260;
+const roadSamplePts = [];
+for (let i = 0; i <= ROAD_SAMPLES; i++) roadSamplePts.push(roadCurve.getPoint(i / ROAD_SAMPLES));
+
+function closestRoadInfo(x, z) {
+  let minD2 = 1e9, bestY = 6.0;
+  for (let i = 0; i <= ROAD_SAMPLES; i++) {
+    const p = roadSamplePts[i];
+    const d2 = (x - p.x) * (x - p.x) + (z - p.z) * (z - p.z);
+    if (d2 < minD2) { minD2 = d2; bestY = p.y; }
+  }
+  return { dist: Math.sqrt(minD2), y: bestY };
+}
+
+// Sparkling Blue Mountain Lake at (-36.5, 22.0) -> Winding Creek -> Waterfall Lip (-34, 50.5)
+const CREEK_POINTS = [
+  new THREE.Vector3(-35.5, 5.8, 25.5),
+  new THREE.Vector3(-32.8, 5.3, 31.0),
+  new THREE.Vector3(-31.0, 4.9, 36.0),
+  new THREE.Vector3(-32.8, 4.3, 43.0),
+  new THREE.Vector3(-34.2, 3.6, 50.5),
+];
+const creekCurve = new THREE.CatmullRomCurve3(CREEK_POINTS, false, 'centripetal', 0.5);
+const creekSamples = [];
+for (let i = 0; i <= 100; i++) creekSamples.push(creekCurve.getPoint(i / 100));
+
+function closestCreekInfo(x, z) {
+  let minD2 = 1e9, bestY = 4.5;
+  for (let i = 0; i <= 100; i++) {
+    const p = creekSamples[i];
+    const d2 = (x - p.x) * (x - p.x) + (z - p.z) * (z - p.z);
+    if (d2 < minD2) { minD2 = d2; bestY = p.y; }
+  }
+  return { dist: Math.sqrt(minD2), y: bestY };
+}
+
+const STALACTITES = [];
+{
+  const rng = mulberry32(19390704);
+  STALACTITES.push({ x: -2.0, z: 6.0, r: 8.6, len: 8.8 });
+  for (let i = 0; i < 36; i++) {
+    const ang = rng() * Math.PI * 2;
+    const rad = Math.pow(rng(), 0.62) * 44.0;
+    STALACTITES.push({
+      x: Math.cos(ang) * rad,
+      z: Math.sin(ang) * rad * 0.88 + 4.0,
+      r: 3.2 + rng() * 4.4,
+      len: 4.4 + rng() * 7.4,
+    });
+  }
+}
+
+function evalIslandColumn(x, z) {
+  const cx = x, cz = z - 4.0;
+  const r = Math.hypot(cx, cz);
+  const ang = Math.atan2(cx, cz);
+  const maxR = islandMaxRadius(ang) + (fbm2(x * 0.07 + 11.3, z * 0.07 - 5.1, 3) - 0.5) * 5.0;
+  if (r > maxR) return null;
+  const edgeFrac = r / maxR;
+
+  let groundY = 5.2 + (fbm2(x * 0.032, z * 0.032, 4) - 0.45) * 6.2;
+
+  const mtDist = Math.hypot(x * 0.76, (z + 6.0) * 1.16);
+  const mtRise = Math.max(0.0, 1.0 - mtDist / 45.0);
+  groundY += Math.pow(mtRise, 1.65) * 21.5;
+
+  // Cascading Talus Slope of Fresh Light-Grey Rubble & Radial Scree Chutes below the Four Faces
+  let talusDepth = 0.0;
+  if (z > 6.0 && z < 31.2 && Math.abs(x + 0.5) < 28.0) {
+    const xNorm = Math.abs(x + 0.5) / 26.0;
+    const chuteBoost = 1.85 * Math.exp(-Math.pow((x - 4.8) / 5.0, 2))
+                     + 1.35 * Math.exp(-Math.pow((x + 13.5) / 4.8, 2))
+                     + 1.25 * Math.exp(-Math.pow((x - 16.5) / 5.5, 2));
+    const zMaxTalus = 28.8 + chuteBoost * 1.3 - xNorm * xNorm * 6.5 + (fbm2(x * 0.24, z * 0.24, 2) - 0.5) * 3.0;
+    if (z < zMaxTalus && xNorm < 1.04) {
+      const slopeT = clamp((zMaxTalus - z) / (zMaxTalus - 7.5), 0.0, 1.0);
+      // Radial scree ridges & tumbled boulder clumping break up flat horizontal stair-stepping!
+      const screeRidges = (ridged2(x * 0.36 + z * 0.08, z * 0.22, 2) - 0.5) * 1.85
+                        + (hash2i(x * 3, z * 3) - 0.5) * 0.95;
+      const talusTop = 5.8 + Math.pow(slopeT, 1.16) * 15.6 + chuteBoost * slopeT + screeRidges;
+      if (talusTop > groundY - 0.5) {
+        talusDepth = Math.max(1.4, talusTop - groundY + 2.4);
+        groundY = Math.max(groundY, talusTop);
+      }
+    }
+  }
+
+  // Base Camp clearing (X in [-20, +15], Z in [28, 46])
+  const campMask = smoothstep(23.0, 14.5, Math.hypot((x + 2.5) * 0.84, (z - 36.5) * 1.18));
+  groundY = mix(groundY, 5.6, campMask * 0.90);
+
+  // Scenic Visitors' Terrace & Parking Promontory (X in [18, 46], Z in [23, 46])
+  const terrMask = smoothstep(18.0, 10.5, Math.hypot((x - 31.0) * 0.82, (z - 34.0) * 0.95));
+  groundY = mix(groundY, 8.5, terrMask * 0.92);
+
+  // Sparkling Blue Mountain Lake Basin at (-36.0, 21.5) — raised slightly & open for crystal-clear view!
+  let isWater = false;
+  let waterSurfaceY = -999;
+  const lakeDist = Math.hypot((x + 36.0) / 11.8, (z - 21.5) / 9.4)
+                 + (fbm2(x * 0.14, z * 0.14, 2) - 0.5) * 0.18;
+  if (lakeDist < 1.24) {
+    const basinT = smoothstep(1.24, 0.70, lakeDist);
+    const lakeBed = 5.8 - basinT * 3.8;
+    groundY = mix(groundY, lakeBed, smoothstep(1.24, 0.96, lakeDist));
+    if (groundY < 5.8 && lakeDist < 1.04) {
+      isWater = true;
+      waterSurfaceY = 5.8;
+    }
+  }
+
+  // Winding Creek Channel
+  const creek = closestCreekInfo(x, z);
+  const creekWidth = 2.55 + 0.45 * Math.sin(z * 0.35);
+  if (creek.dist < creekWidth + 2.2 && z > 23.0) {
+    const bankT = smoothstep(creekWidth + 2.2, creekWidth * 0.55, creek.dist);
+    groundY = mix(groundY, creek.y - 1.75, bankT);
+    if (creek.dist < creekWidth) {
+      isWater = true;
+      waterSurfaceY = Math.max(waterSurfaceY, creek.y);
+    }
+  }
+
+  // Winding Dirt Road
+  const road = closestRoadInfo(x, z);
+  let onRoad = false;
+  const nearBridge = Math.hypot(x + 31.0, z - 36.0) < 4.4;
+  if (road.dist < 4.3 && !nearBridge) {
+    const rBlend = smoothstep(4.3, 2.2, road.dist);
+    groundY = mix(groundY, road.y, rBlend * 0.92);
+    if (road.dist < 2.35) {
+      onRoad = true;
+      isWater = false;
+      talusDepth = 0.0;
+    }
+  }
+
+  const rimTaper = smoothstep(1.0, 0.91, edgeFrac);
+  if (edgeFrac > 0.91 && !(Math.abs(x + 34.2) < 3.6 && z > 46.0)) {
+    groundY = mix(2.2, groundY, rimTaper);
+  }
+
+  // Jagged Rocky Underside with Hanging Stalactites
+  const baseKeel = Math.pow(Math.max(0.0, 1.0 - edgeFrac * edgeFrac), 0.72) * 14.0;
+  const cragUnder = ridged2(x * 0.075 + 3.1, z * 0.075 - 7.4, 3) * 7.5
+                  + fbm2(x * 0.18, z * 0.18, 2) * 2.6;
+  let bottomY = 1.8 - (baseKeel + cragUnder * Math.sqrt(Math.max(0.05, 1.0 - edgeFrac)));
+
+  for (let i = 0; i < STALACTITES.length; i++) {
+    const st = STALACTITES[i];
+    const sd = Math.hypot(x - st.x, z - st.z);
+    if (sd < st.r) {
+      const cone = (1.0 - sd / st.r);
+      bottomY -= cone * cone * st.len;
+    }
+  }
+  bottomY = Math.min(bottomY, groundY - 2.0);
+
+  return {
+    topY: Math.round(groundY),
+    bottomY: Math.round(bottomY),
+    talusDepth,
+    isWater,
+    waterY: Math.round(waterSurfaceY),
+    onRoad,
+    terrMask,
+    campMask,
+    edgeFrac,
+  };
+}
+
+// ============================================================================
+// 6. POPULATE COARSE ISLAND VOXEL GRID
+// ============================================================================
+const GX0 = -68, GX1 = 68, NX = GX1 - GX0 + 1;
+const GY0 = -30, GY1 = 55, NY = GY1 - GY0 + 1;
+const GZ0 = -48, GZ1 = 58, NZ = GZ1 - GZ0 + 1;
+const coarseGrid = new Uint32Array(NX * NY * NZ);
+const waterGrid = new Uint32Array(NX * NY * NZ);
+
+function cIdx(x, y, z) {
+  return ((y - GY0) * NZ + (z - GZ0)) * NX + (x - GX0);
+}
+function inCoarse(x, y, z) {
+  return x >= GX0 && x <= GX1 && y >= GY0 && y <= GY1 && z >= GZ0 && z <= GZ1;
+}
+function setVoxel(x, y, z, packedCol) {
+  const xi = Math.round(x), yi = Math.round(y), zi = Math.round(z);
+  if (!inCoarse(xi, yi, zi)) return;
+  coarseGrid[cIdx(xi, yi, zi)] = packedCol;
+}
+function getVoxel(x, y, z) {
+  if (!inCoarse(x, y, z)) return 0;
+  return coarseGrid[cIdx(x, y, z)];
+}
+function setWaterVoxel(x, y, z, packedCol) {
+  const xi = Math.round(x), yi = Math.round(y), zi = Math.round(z);
+  if (!inCoarse(xi, yi, zi)) return;
+  waterGrid[cIdx(xi, yi, zi)] = packedCol;
+}
+
+// Fine-Grid Bounding Volume (enclosing organic sculpt envelope around the 4 presidents)
+const FINE_WX0 = -31.5, FINE_WX1 = 29.5;
+const FINE_WY0 = 17.5,  FINE_WY1 = 41.5;
+const FINE_WZ0 = -4.5,  FINE_WZ1 = 18.5;
+
+function isInsideOrganicFineSocket(x, y, z) {
+  if (x <= FINE_WX0 || x >= FINE_WX1 || y <= FINE_WY0 || y >= FINE_WY1 || z <= FINE_WZ0 || z >= FINE_WZ1) return false;
+  return evalFineSculptEnvelope(x, y, z) > 0.42;
+}
+
+function strataColor(x, y, z) {
+  const warp = (fbm2(x * 0.045, z * 0.045, 3) - 0.5) * 4.6 + Math.sin(x * 0.05) * 1.4;
+  const sy = y + warp;
+  const n = (hash3i(x, y, z) - 0.5) * 16;
+  if (sy > 3.2) return packColor(168 + n, 138 + n, 104 + n, 2);
+  if (sy > 0.2) return packColor(158 + n, 96 + n * 0.7, 74 + n * 0.6, 2);
+  if (sy > -3.2) return packColor(180 + n, 162 + n, 136 + n, 2);
+  if (sy > -7.5) return packColor(106 + n, 102 + n, 108 + n, 2);
+  if (sy > -12.5) return packColor(138 + n, 114 + n, 94 + n, 2);
+  return packColor(84 + n * 0.7, 80 + n * 0.7, 86 + n * 0.7, 2);
+}
+
+function naturalGraniteColor(x, y, z) {
+  // Rich Harney Peak granite with subtle vertical fissure bands, warm feldspar & occasional crag lichen
+  const fissure = Math.sin(x * 0.75 + fbm2(x * 0.15, z * 0.15, 2) * 3.0) > 0.88 ? -14 : 0;
+  const n = (fbm3(x * 0.18, y * 0.18, z * 0.18, 2) - 0.5) * 26 + (hash3i(x, y, z) - 0.5) * 14 + fissure;
+  const pink = hash3i(x + 31, y - 17, z + 9) > 0.70 ? 11 : 0;
+  return packColor(165 + n + pink, 145 + n * 0.9, 124 + n * 0.8, 2);
+}
+
+const surfaceTopMap = new Int16Array(NX * NZ).fill(-999);
+const surfaceTypeMap = new Uint8Array(NX * NZ);
+
+for (let z = GZ0; z <= GZ1; z++) {
+  for (let x = GX0; x <= GX1; x++) {
+    const col = evalIslandColumn(x, z);
+    const mapIdx = (z - GZ0) * NX + (x - GX0);
+
+    if (col) {
+      surfaceTopMap[mapIdx] = col.topY;
+
+      for (let y = col.bottomY; y <= col.topY; y++) {
+        if (isInsideOrganicFineSocket(x, y, z)) continue;
+
+        let pCol;
+        const depthFromTop = col.topY - y;
+
+        if (col.talusDepth > 0.5 && depthFromTop < col.talusDepth) {
+          const v = (hash3i(x, y, z) - 0.5) * 30;
+          const freshChip = hash3i(x * 5, y * 3, z * 7) > 0.76 ? 12 : 0;
+          pCol = packColor(196 + v + freshChip, 194 + v + freshChip, 190 + v * 0.9 + freshChip, 3);
+          if (depthFromTop === 0) surfaceTypeMap[mapIdx] = 2;
+        } else if (depthFromTop === 0 && col.onRoad) {
+          const rut = (hash2i(x, z) - 0.5) * 16;
+          pCol = packColor(174 + rut, 140 + rut * 0.8, 98 + rut * 0.7, 2);
+          surfaceTypeMap[mapIdx] = 3;
+        } else if (depthFromTop === 0 && col.terrMask > 0.62 && z < 35.5 && x > 19 && x < 39) {
+          const checker = ((x + z) & 1) * 8 + (hash2i(x, z) - 0.5) * 14;
+          pCol = packColor(166 + checker, 156 + checker, 144 + checker, 2);
+          surfaceTypeMap[mapIdx] = 6;
+        } else if (depthFromTop === 0 && col.terrMask > 0.55 && z >= 35.5) {
+          const g = (hash2i(x, z) - 0.5) * 18;
+          pCol = packColor(152 + g, 140 + g, 124 + g, 2);
+          surfaceTypeMap[mapIdx] = 6;
+        } else if (depthFromTop === 0 && col.campMask > 0.58) {
+          const c = (hash2i(x, z) - 0.5) * 16;
+          const earthy = smoothstep(0.58, 0.88, col.campMask);
+          pCol = packColor(
+            mix(176, 152, earthy) + c,
+            mix(156, 124, earthy) + c,
+            mix(72, 86, earthy) + c * 0.6,
+            2
+          );
+          surfaceTypeMap[mapIdx] = 5;
+        } else if (depthFromTop <= 1 && !col.isWater && col.topY < 20) {
+          // Lush golden summer meadows around rim/camp/lake + rich Black Hills forest floor
+          const frontMeadow = (z > 41 && x > -26 && x < 20) ? 0.30 : 0.0;
+          const lakeMeadow = (x < -24 && z > 16 && z < 44) ? 0.18 : 0.0;
+          const meadowPatch = fbm2(x * 0.085 + 4.2, z * 0.085 - 2.7, 3) + frontMeadow + lakeMeadow;
+          const j = (hash3i(x, y, z) - 0.5) * 18;
+          if (meadowPatch > 0.48) {
+            pCol = packColor(196 + j, 165 + j * 0.8, 68 + j * 0.5, 2);
+          } else {
+            pCol = packColor(80 + j * 0.7, 116 + j * 0.8, 52 + j * 0.5, 2);
+          }
+          if (depthFromTop === 0) surfaceTypeMap[mapIdx] = 1;
+        } else if (depthFromTop <= 2 && col.isWater) {
+          const w = (hash3i(x, y, z) - 0.5) * 16;
+          pCol = packColor(78 + w, 98 + w, 102 + w, 1);
+          if (depthFromTop === 0) surfaceTypeMap[mapIdx] = 4;
+        } else if (y > 12) {
+          pCol = naturalGraniteColor(x, y, z);
+          if (depthFromTop === 0) surfaceTypeMap[mapIdx] = 7;
+        } else {
+          pCol = strataColor(x, y, z);
+        }
+
+        setVoxel(x, y, z, pCol);
+      }
+
+      if (col.edgeFrac > 0.90 && !col.isWater && col.topY < 16 && hash2i(x * 3, z * 3) > 0.40) {
+        setVoxel(x, col.topY - 1, z, packColor(94, 128, 56, 2));
+        if (hash2i(x + 9, z - 5) > 0.62) {
+          setVoxel(x, col.topY - 2, z, packColor(156, 138, 62, 2));
+        }
+      }
+
+      if (col.isWater && col.waterY >= col.topY) {
+        for (let wy = col.topY + 1; wy <= col.waterY; wy++) {
+          const depth = col.waterY - wy + (col.waterY - col.topY);
+          const ripple = hash2i(x * 7 + wy, z * 11) > 0.86 ? 26 : 0;
+          const foam = (z > 46.5 || (z > 27 && hash2i(x * 5, z * 7) > 0.82)) ? 48 : ripple;
+          const rCol = clamp(32 + foam - depth * 4, 18, 232);
+          const gCol = clamp(138 + foam - depth * 5, 84, 244);
+          const bCol = clamp(196 + foam - depth * 3, 142, 252);
+          setWaterVoxel(x, wy, z, packColor(rCol, gCol, bCol, 1));
+        }
+      }
+    }
+
+    if (Math.abs(x) <= 40 && z >= -34 && z <= 19) {
+      for (let y = Math.max(8, col ? col.topY : 8); y <= 54; y++) {
+        if (isInsideOrganicFineSocket(x, y, z)) continue;
+        if (naturalMountainSDF(x, y, z) <= 0.0) {
+          setVoxel(x, y, z, naturalGraniteColor(x, y, z));
+          if (y > surfaceTopMap[mapIdx]) {
+            surfaceTopMap[mapIdx] = y;
+            surfaceTypeMap[mapIdx] = 7;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Fresh Light-Grey Angular Rubble Boulders Scattered Down the Talus Slope
+{
+  const rng = mulberry32(88421);
+  for (let i = 0; i < 95; i++) {
+    const ix = Math.round(-24 + rng() * 48);
+    const iz = Math.round(12 + rng() * 17);
+    if (!inCoarse(ix, 10, iz)) continue;
+    const mIdx = (iz - GZ0) * NX + (ix - GX0);
+    if (surfaceTypeMap[mIdx] !== 2) continue;
+    const by = surfaceTopMap[mIdx];
+    const sz = rng() > 0.70 ? 2 : 1;
+    for (let dx = 0; dx < sz; dx++)
+      for (let dy = 0; dy < sz; dy++)
+        for (let dz = 0; dz < sz; dz++) {
+          if (sz === 2 && dy === 1 && dx === 1 && dz === 1 && rng() > 0.4) continue;
+          const j = (rng() - 0.5) * 24;
+          setVoxel(ix + dx, by + 1 + dy, iz + dz, packColor(210 + j, 208 + j, 204 + j, 2));
+        }
+  }
+}
+
+// Plunging Multi-Stream Voxel Waterfall cascading off the front-left island rim at (-34, 50..54, Y = 4 down to -16)
+for (let wy = -16; wy <= 4; wy++) {
+  const drop = Math.max(0, 4 - wy);
+  const zFall = 50.5 + Math.min(3.2, drop * 0.22);
+  const spread = 1.8 + drop * 0.07;
+  for (let dx = -3; dx <= 3; dx++) {
+    const wx = -34 + dx;
+    if (Math.abs(dx) > spread) continue;
+    const n = hash3i(wx, wy, 99);
+    if (wy < -9 && n < (-9 - wy) * 0.13) continue;
+    const zc = Math.round(zFall + (n - 0.5) * 0.9);
+    const foam = (wy > 1 || wy < -8 || Math.abs(dx) > spread - 0.8 || n > 0.58);
+    setWaterVoxel(wx, wy, zc, foam ? packColor(226, 242, 252, 1) : packColor(52, 158, 214, 1));
+    if (drop < 13 && n > 0.32) setWaterVoxel(wx, wy, zc - 1, packColor(44, 140, 198, 1));
+  }
+}
+
+function fillBox(x0, y0, z0, x1, y1, z1, col) {
+  for (let y = y0; y <= y1; y++)
+    for (let z = z0; z <= z1; z++)
+      for (let x = x0; x <= x1; x++)
+        setVoxel(x, y, z, col);
+}
+
+// Timber Creek Bridge at (-31, 5..7, 36)
+{
+  const timberDark = packColor(96, 66, 42, 2);
+  const plankWarm  = packColor(156, 116, 72, 2);
+  const railPost   = packColor(128, 92, 58, 2);
+  fillBox(-34, 5, 34, -28, 5, 38, plankWarm);
+  for (const px of [-34, -31, -28])
+    for (const pz of [34, 38])
+      fillBox(px, 2, pz, px, 6, pz, timberDark);
+  fillBox(-34, 6, 34, -28, 6, 34, railPost);
+  fillBox(-34, 6, 38, -28, 6, 38, railPost);
+}
+
+// Wooden Lake Pier & Moored Red Rowboat on the Sparkling Blue Lake (-30, 6, 22)
+{
+  fillBox(-30, 6, 21, -26, 6, 22, packColor(152, 112, 72, 2));
+  for (const px of [-30, -28, -26]) {
+    setVoxel(px, 5, 21, packColor(88, 62, 40, 1));
+    setVoxel(px, 5, 22, packColor(88, 62, 40, 1));
+  }
+  fillBox(-36, 6, 20, -34, 6, 21, packColor(182, 62, 46, 1));
+  setVoxel(-37, 6, 20, packColor(214, 182, 128, 1));
+}
+
+// Road Guardposts & Retaining Curb
+for (let i = 8; i < ROAD_SAMPLES - 6; i += 8) {
+  const p = roadSamplePts[i];
+  const pNext = roadSamplePts[i + 1];
+  const tang = new THREE.Vector3().subVectors(pNext, p).normalize();
+  const outNormal = new THREE.Vector3(tang.z, 0, -tang.x).normalize();
+  const gx = Math.round(p.x + outNormal.x * 2.8);
+  const gz = Math.round(p.z + outNormal.z * 2.8);
+  if (Math.hypot(gx + 31, gz - 36) < 5) continue;
+  const gy = Math.round(p.y);
+  if (p.y > 7.2 || gx < -34) {
+    setVoxel(gx, gy + 1, gz, packColor(228, 222, 210, 1));
+    setVoxel(gx, gy, gz, packColor(112, 82, 52, 2));
+  }
+}
+
+// ============================================================================
+// 7. BASE CAMP, RED COMPRESSOR HOUSE, GLOWING FORGE, TRAMWAY & VISITORS' TERRACE
+// ============================================================================
+function buildGabledBuilding(cx, baseY, cz, halfW, height, halfD, wallCol, roofCol, trimCol, doorSide = '+z') {
+  const stoneBase = packColor(124, 118, 112, 2);
+  const woodFloor = packColor(152, 114, 74, 2);
+  fillBox(cx - halfW, baseY - 1, cz - halfD, cx + halfW, baseY, cz + halfD, stoneBase);
+  if (halfW >= 2 && halfD >= 2) {
+    fillBox(cx - halfW + 1, baseY, cz - halfD + 1, cx + halfW - 1, baseY, cz + halfD - 1, woodFloor);
+  }
+
+  // Hollow perimeter walls (interior stays open air 0 so the player can walk inside!)
+  for (let y = baseY + 1; y <= baseY + height; y++) {
+    for (let z = cz - halfD; z <= cz + halfD; z++) {
+      for (let x = cx - halfW; x <= cx + halfW; x++) {
+        const onWall = (x === cx - halfW || x === cx + halfW || z === cz - halfD || z === cz + halfD);
+        setVoxel(x, y, z, onWall ? wallCol : 0);
+      }
+    }
+  }
+  for (const sx of [-halfW, halfW])
+    for (const sz of [-halfD, halfD])
+      fillBox(cx + sx, baseY + 1, cz + sz, cx + sx, baseY + height, cz + sz, trimCol);
+
+  const winGlow = packColor(250, 212, 124, 0);
+  for (let wx = cx - halfW + 2; wx <= cx + halfW - 2; wx += 2) {
+    setVoxel(wx, baseY + 2, cz + halfD, winGlow);
+    setVoxel(wx, baseY + 2, cz - halfD, winGlow);
+  }
+
+  // Hollow vaulted gable roof + warm interior lantern & table
+  for (let r = 0; r <= halfD + 1; r++) {
+    const ry = baseY + height + 1 + r;
+    const span = halfD + 1 - r;
+    if (span < 0) break;
+    for (let x = cx - halfW - 1; x <= cx + halfW + 1; x++) {
+      setVoxel(x, ry, cz - span, roofCol);
+      setVoxel(x, ry, cz + span, roofCol);
+      if (span > 0 && x >= cx - halfW && x <= cx + halfW) {
+        const isGableEnd = (x === cx - halfW || x === cx + halfW);
+        for (let z = cz - span + 1; z <= cz + span - 1; z++) {
+          setVoxel(x, ry, z, isGableEnd ? wallCol : 0);
+        }
+      }
+    }
+  }
+
+  // Interior warm lantern & rustic table
+  setVoxel(cx, baseY + height, cz, winGlow);
+  if (halfW >= 2 && halfD >= 2) {
+    setVoxel(cx - halfW + 1, baseY + 1, cz - halfD + 1, packColor(134, 94, 56, 1));
+  }
+
+  // Carve walkable 1x2 open doorway + clear 1 step outside so terrain never blocks entrance!
+  const doorFrame = packColor(92, 60, 36, 1);
+  if (doorSide === '+z') {
+    if (height >= 3) setVoxel(cx, baseY + 3, cz + halfD, doorFrame);
+    setVoxel(cx, baseY + 1, cz + halfD, 0);
+    setVoxel(cx, baseY + 2, cz + halfD, 0);
+    setVoxel(cx, baseY, cz + halfD + 1, stoneBase);
+    setVoxel(cx, baseY + 1, cz + halfD + 1, 0);
+    setVoxel(cx, baseY + 2, cz + halfD + 1, 0);
+  } else if (doorSide === '-z') {
+    if (height >= 3) setVoxel(cx, baseY + 3, cz - halfD, doorFrame);
+    setVoxel(cx, baseY + 1, cz - halfD, 0);
+    setVoxel(cx, baseY + 2, cz - halfD, 0);
+    setVoxel(cx, baseY, cz - halfD - 1, stoneBase);
+    setVoxel(cx, baseY + 1, cz - halfD - 1, 0);
+    setVoxel(cx, baseY + 2, cz - halfD - 1, 0);
+  } else if (doorSide === '+x') {
+    if (height >= 3) setVoxel(cx + halfW, baseY + 3, cz, doorFrame);
+    setVoxel(cx + halfW, baseY + 1, cz, 0);
+    setVoxel(cx + halfW, baseY + 2, cz, 0);
+    setVoxel(cx + halfW + 1, baseY, cz, stoneBase);
+    setVoxel(cx + halfW + 1, baseY + 1, cz, 0);
+    setVoxel(cx + halfW + 1, baseY + 2, cz, 0);
+  } else if (doorSide === '-x') {
+    if (height >= 3) setVoxel(cx - halfW, baseY + 3, cz, doorFrame);
+    setVoxel(cx - halfW, baseY + 1, cz, 0);
+    setVoxel(cx - halfW, baseY + 2, cz, 0);
+    setVoxel(cx - halfW - 1, baseY, cz, stoneBase);
+    setVoxel(cx - halfW - 1, baseY + 1, cz, 0);
+    setVoxel(cx - halfW - 1, baseY + 2, cz, 0);
+  }
+}
+
+// 7A. RED COMPRESSOR HOUSE with Tall Smoking Chimney, Air Receiver Tank & Steel Pipeline! (-11, 6, 34)
+{
+  const barnRed = packColor(184, 46, 38, 2);
+  const tinRoof = packColor(128, 136, 144, 2);
+  const whiteTrim = packColor(232, 224, 210, 1);
+  buildGabledBuilding(-11, 6, 34, 4, 4, 3, barnRed, tinRoof, whiteTrim, '+z');
+
+  // Tall Black Iron Smokestack
+  fillBox(-14, 6, 32, -14, 19, 32, packColor(50, 48, 54, 1));
+  setVoxel(-14, 19, 32, packColor(34, 32, 36, 1));
+
+  // Cylindrical Steel Compressed-Air Receiver Tank + Pipe climbing the Talus to Carving Ledge!
+  fillBox(-6, 6, 32, -6, 6, 36, packColor(92, 90, 88, 1));
+  fillBox(-6, 7, 32, -5, 8, 36, packColor(148, 156, 164, 1));
+  for (let pz = 31; pz >= 12; pz--) {
+    const mIdx = (pz - GZ0) * NX + (-6 - GX0);
+    setVoxel(-6, surfaceTopMap[mIdx] + 1, pz, packColor(116, 122, 130, 1));
+  }
+}
+
+// 7B. BLACKSMITH'S GLOWING FORGE at (-1, 6, 34) — Open Front (+Z) so flickering orange coals shine clearly!
+const forgeGlowVoxels = [];
+{
+  const darkTimber = packColor(98, 68, 44, 2);
+  const shingleRoof = packColor(76, 68, 64, 2);
+  const sootBrick = packColor(94, 58, 48, 2);
+
+  fillBox(-4, 5, 32, 2, 6, 36, packColor(116, 110, 104, 2));
+  fillBox(-4, 7, 32, 2, 10, 32, darkTimber);
+  fillBox(-4, 7, 32, -4, 10, 36, darkTimber);
+  fillBox(2, 7, 36, 2, 10, 36, darkTimber);
+  fillBox(-5, 11, 31, 3, 11, 34, shingleRoof);
+  fillBox(-5, 10, 34, 3, 10, 37, shingleRoof);
+
+  fillBox(-3, 7, 33, 0, 8, 35, sootBrick);
+  fillBox(-2, 9, 33, -1, 13, 33, sootBrick);
+  forgeGlowVoxels.push(
+    { x: -2, y: 8, z: 34, c: 0xff8a1c },
+    { x: -1, y: 8, z: 34, c: 0xffc844 },
+    { x: -2, y: 8, z: 35, c: 0xff6e14 },
+    { x: -1, y: 8, z: 35, c: 0xffb22c },
+    { x: -1, y: 9, z: 34, c: 0xffe470 }
+  );
+  for (const gv of forgeGlowVoxels) setVoxel(gv.x, gv.y, gv.z, 0);
+
+  setVoxel(1, 7, 35, packColor(64, 66, 72, 1)); // Iron Anvil
+  setVoxel(0, 7, 36, packColor(112, 78, 48, 1)); // Quench Barrel
+  setWaterVoxel(0, 7, 36, packColor(62, 138, 176, 1));
+}
+
+// 7C. WOODEN BASE CAMP SHEDS, CABLE REELS, DYNAMITE BOXES, TRAMWAY HOIST & US FLAGPOLE
+{
+  const weatheredWood = packColor(158, 122, 82, 2);
+  const pineBoard     = packColor(178, 142, 94, 2);
+  const greenRoof     = packColor(66, 96, 70, 2);
+  const brownRoof     = packColor(108, 78, 56, 2);
+  const trimWood      = packColor(116, 84, 54, 2);
+
+  buildGabledBuilding(-19, 6, 43, 3, 3, 2, pineBoard, greenRoof, trimWood, '+x');
+  buildGabledBuilding(8,   6, 33, 3, 3, 2, weatheredWood, brownRoof, trimWood, '+z');
+  buildGabledBuilding(14,  6, 38, 2, 3, 2, pineBoard, greenRoof, trimWood, '-x');
+
+  // Stacked Supply Crates, Steel Cable Spools & Red Dynamite Magazine Boxes
+  fillBox(-9, 6, 40, -7, 7, 41, packColor(194, 158, 104, 2));
+  fillBox(4,  6, 38,  5, 7, 39, packColor(182, 144, 92, 2));
+  setVoxel(11, 6, 41, packColor(192, 46, 38, 1)); // Red dynamite crate
+  setVoxel(12, 6, 41, packColor(192, 46, 38, 1));
+  fillBox(-14, 6, 40, -13, 7, 40, packColor(136, 98, 62, 1)); // Wooden cable spool
+
+  // Aerial Tramway Lower Hoist House & Timber A-Frame Tower on Left Camp Shoulder (-28, 6, 29)
+  buildGabledBuilding(-28, 6, 29, 2, 3, 2, weatheredWood, greenRoof, trimWood, '+z');
+  for (let ty = 6; ty <= 15; ty++) {
+    setVoxel(-29, ty, 27, trimWood);
+    setVoxel(-27, ty, 27, trimWood);
+  }
+  fillBox(-29, 15, 27, -27, 15, 27, trimWood);
+
+  // Tall White US Flagpole at (3, 6..19, 41) in open camp plaza!
+  for (let fy = 6; fy <= 19; fy++) setVoxel(3, fy, 41, packColor(238, 234, 226, 0));
+  setVoxel(3, 20, 41, packColor(246, 204, 78, 0));
+
+  // Split-rail wooden fence framing the sunlit golden front meadow!
+  for (let fx = -14; fx <= 14; fx++) {
+    if (fx >= -2 && fx <= 3) continue;
+    const mIdx = (48 - GZ0) * NX + (fx - GX0);
+    const fy = surfaceTopMap[mIdx];
+    if (fy > 3) setVoxel(fx, fy + 1, 48, fx % 3 === 0 ? trimWood : pineBoard);
+  }
+}
+
+// 7D. DETAILED SUMMIT WINCH SHACKS & OVERHANGING TIMBER DERRICK BOOMS ON TOP OF THE CLIFF!
+const WINCH_SHACKS = [
+  { x: -30, y: 40, z: -2, roof: packColor(162, 56, 46, 2), boomZ: 4 }, // Upper Tramway Summit Hoist Shack
+  { x: -16, y: 45, z: -6, roof: packColor(98, 76, 56, 2),  boomZ: 5 }, // Washington summit winch house
+  { x:   1, y: 41, z: -7, roof: packColor(70, 94, 68, 2),  boomZ: 5 }, // Central cleft winch house
+  { x:  17, y: 44, z: -6, roof: packColor(106, 78, 56, 2), boomZ: 5 }, // Lincoln summit winch house
+];
+for (const ws of WINCH_SHACKS) {
+  const wood = packColor(158, 120, 78, 2);
+  const trim = packColor(104, 74, 48, 2);
+  const iron = packColor(68, 72, 78, 1);
+  fillBox(ws.x - 2, ws.y - 2, ws.z - 2, ws.x + 2, ws.y, ws.z + 1, naturalGraniteColor(ws.x, ws.y, ws.z));
+  fillBox(ws.x - 2, ws.y + 1, ws.z - 2, ws.x + 2, ws.y + 3, ws.z + 1, wood);
+  for (const sx of [-2, 2])
+    for (const sz of [-2, 1])
+      fillBox(ws.x + sx, ws.y + 1, ws.z + sz, ws.x + sx, ws.y + 3, ws.z + sz, trim);
+  setVoxel(ws.x, ws.y + 2, ws.z + 1, packColor(246, 206, 120, 0)); // Warm winch-shack window
+  fillBox(ws.x - 2, ws.y + 4, ws.z - 2, ws.x + 2, ws.y + 4, ws.z + 2, ws.roof);
+  fillBox(ws.x - 1, ws.y + 5, ws.z - 1, ws.x + 1, ws.y + 5, ws.z + 1, ws.roof);
+  // Coiled steel cable drum + overhanging timber derrick boom
+  setVoxel(ws.x, ws.y + 1, ws.z + 2, iron);
+  fillBox(ws.x, ws.y + 3, ws.z + 2, ws.x, ws.y + 3, ws.z + 2 + ws.boomZ, trim);
+  setVoxel(ws.x, ws.y + 2, ws.z + 2 + ws.boomZ, iron);
+}
+// Upper Aerial Tramway Summit A-Frame Tower at (-31..-29, 40..46, 1)
+for (let ty = 40; ty <= 46; ty++) {
+  setVoxel(-31, ty, 1, packColor(112, 80, 50, 2));
+  setVoxel(-29, ty, 1, packColor(112, 80, 50, 2));
+}
+fillBox(-31, 46, 1, -29, 46, 1, packColor(112, 80, 50, 2));
+
+// Wooden Plank Wheelbarrow Walkway across Talus, Timber Muck-Chute & Ledge Scaffolding
+for (let xw = -13; xw <= 13; xw++) {
+  const zw = Math.round(24.0 - Math.abs(xw) * 0.20);
+  const mIdx = (zw - GZ0) * NX + (xw - GX0);
+  const ty = surfaceTopMap[mIdx];
+  setVoxel(xw, ty, zw, packColor(164, 126, 80, 2));
+  setVoxel(xw, ty, zw + 1, packColor(156, 118, 74, 2));
+}
+// Historic Rushmore Timber Scree-Chute / Stairway descending right-center talus (x = 12, z = 13..26)
+for (let zc = 13; zc <= 26; zc++) {
+  const mIdx = (zc - GZ0) * NX + (12 - GX0);
+  const ty = surfaceTopMap[mIdx];
+  setVoxel(12, ty + 1, zc, packColor(148, 110, 68, 2));
+  if (zc % 2 === 0) setVoxel(13, ty + 1, zc, packColor(122, 88, 54, 2));
+}
+fillBox(11, 7, 27, 13, 9, 28, packColor(132, 96, 60, 2)); // Rubble hopper bin at toe of chute
+
+for (let xs = -10; xs <= 16; xs++) {
+  const zs = xs > 1 && xs < 9 ? 10 : 12;
+  setVoxel(xs, 20, zs, packColor(162, 124, 78, 2));
+  if (xs % 4 === 0) fillBox(xs, 17, zs, xs, 21, zs, packColor(108, 78, 48, 2));
+}
+
+// 7E. VISITORS' TERRACE PAVILION, STONE PARAPET & COIN BINOCULARS
+{
+  const stoneWall = packColor(144, 134, 122, 2);
+  const logRail   = packColor(138, 98, 60, 2);
+  for (let tx = 19; tx <= 39; tx++) {
+    setVoxel(tx, 9, 24, stoneWall);
+    setVoxel(tx, 10, 24, tx % 3 === 0 ? stoneWall : logRail);
+  }
+  for (let tz = 24; tz <= 35; tz++) {
+    setVoxel(19, 9, tz, stoneWall);
+    setVoxel(19, 10, tz, tz % 3 === 0 ? stoneWall : logRail);
+  }
+  // Rustic Log View Terrace Lodge
+  buildGabledBuilding(37, 9, 29, 2, 3, 3, packColor(138, 96, 60, 2), packColor(70, 98, 68, 2), packColor(96, 66, 40, 2), '-x');
+
+  // Brass Viewing Binoculars & Wooden Benches
+  for (const bx of [22, 27, 32]) {
+    setVoxel(bx, 9, 25, packColor(78, 82, 88, 1));
+    setVoxel(bx, 10, 25, packColor(208, 184, 114, 1));
+  }
+  fillBox(24, 9, 31, 26, 9, 31, logRail);
+  fillBox(30, 9, 31, 32, 9, 31, logRail);
+}
+
+// ============================================================================
+// 8. DENSE BLACK HILLS PINE FOREST & GOLDEN MEADOWS (CLEAR SIGHTLINES TO HERO AREAS!)
+// ============================================================================
+function stampBlackHillsPine(tx, baseY, tz, height, rng) {
+  const trunkH = Math.max(2, Math.floor(height * 0.26));
+  const barkCol = packColor(92 + (rng() - 0.5) * 16, 62 + (rng() - 0.5) * 12, 40, 2);
+  for (let y = 0; y <= trunkH + 2; y++) setVoxel(tx, baseY + y, tz, barkCol);
+
+  const hueShift = (rng() - 0.5) * 18;
+  const darkBough = packColor(22 + hueShift * 0.4, 56 + hueShift, 35 + hueShift * 0.5, 2);
+  const midBough  = packColor(34 + hueShift * 0.5, 78 + hueShift, 44 + hueShift * 0.5, 2);
+  const tipBough  = packColor(52 + hueShift * 0.6, 100 + hueShift, 52 + hueShift * 0.5, 2);
+
+  const crownStart = baseY + trunkH;
+  const crownH = height - trunkH;
+  for (let ly = 0; ly <= crownH; ly++) {
+    const t = ly / Math.max(1, crownH);
+    const tierWave = 1.0 + 0.26 * Math.sin(ly * 2.35);
+    const maxR = (1.0 - t * 0.88) * (height * 0.29 + 0.85) * tierWave;
+    const rCeil = Math.ceil(maxR);
+    for (let dz = -rCeil; dz <= rCeil; dz++) {
+      for (let dx = -rCeil; dx <= rCeil; dx++) {
+        const d = Math.hypot(dx, dz);
+        if (d > maxR + 0.15) continue;
+        if (d > maxR - 0.45 && ((Math.abs(dx) + Math.abs(dz) + ly) % 2 === 1) && ly < crownH - 1) continue;
+        const isTip = d > maxR - 0.65 || ly >= crownH - 1;
+        setVoxel(tx + dx, crownStart + ly, tz + dz, isTip ? tipBough : (ly % 2 === 0 ? darkBough : midBough));
+      }
+    }
+  }
+  setVoxel(tx, crownStart + crownH + 1, tz, tipBough);
+}
+
+{
+  const rng = mulberry32(19390815);
+  const treeCoords = [];
+  for (let z = GZ0 + 3; z <= GZ1 - 3; z += 2) {
+    for (let x = GX0 + 3; x <= GX1 - 3; x += 2) {
+      const jx = x + Math.floor(rng() * 3) - 1;
+      const jz = z + Math.floor(rng() * 3) - 1;
+      if (!inCoarse(jx, 5, jz)) continue;
+      const mIdx = (jz - GZ0) * NX + (jx - GX0);
+      const sType = surfaceTypeMap[mIdx];
+      const topY = surfaceTopMap[mIdx];
+      if (topY < 1 || topY > 25) continue;
+      if (sType !== 1 && !(sType === 7 && topY < 22 && Math.abs(jx) > 31 && rng() > 0.50)) continue;
+
+      // STRICT SIGHTLINE EXCLUSIONS: Never block the 4 faces, talus, tramway, compressor/forge camp, lake/creek, or terrace!
+      if (jz > -10 && jz < 31 && jx > -33 && jx < 28) continue;
+      if (jx > -26 && jx < 19 && jz > 25 && jz < 58) continue;  // open camp + golden front meadow!
+      if (jx >= 18 && jx < 44 && jz > 22 && jz < 52) continue;  // open visitors' terrace & vintage car park!
+      if (jx > -46 && jx <= -25 && jz > 14 && jz < 52) continue;// open view of Blue Lake, pier, rowboat, creek & waterfall!
+      if (closestRoadInfo(jx, jz).dist < 4.2) continue;
+      if (closestCreekInfo(jx, jz).dist < 3.8) continue;
+      if (Math.hypot((jx + 36) / 12.6, (jz - 21.5) / 10.2) < 1.08) continue;
+
+      const forestDensity = fbm2(jx * 0.065 - 3.4, jz * 0.065 + 8.1, 3);
+      if (forestDensity > 0.64 && rng() < 0.70) {
+        if (rng() < 0.5) setVoxel(jx, topY + 1, jz, packColor(212, 180, 70, 2));
+        continue;
+      }
+
+      let tooClose = false;
+      for (let k = treeCoords.length - 1; k >= 0 && k >= treeCoords.length - 45; k--) {
+        const tc = treeCoords[k];
+        if ((tc.x - jx) * (tc.x - jx) + (tc.z - jz) * (tc.z - jz) < 9.5) { tooClose = true; break; }
+      }
+      if (tooClose) continue;
+
+      treeCoords.push({ x: jx, z: jz });
+      const h = (jz > 42 ? 6 : 7) + Math.floor(rng() * (jz > 42 ? 4 : 7));
+      stampBlackHillsPine(jx, topY, jz, h, rng);
+    }
+  }
+
+  // Golden meadow grass tufts, wildflowers, shoreline reeds & mossy boulders!
+  for (let i = 0; i < 620; i++) {
+    const gx = Math.floor(GX0 + 5 + rng() * (NX - 10));
+    const gz = Math.floor(GZ0 + 5 + rng() * (NZ - 10));
+    const mIdx = (gz - GZ0) * NX + (gx - GX0);
+    if (surfaceTypeMap[mIdx] !== 1) continue;
+    const gy = surfaceTopMap[mIdx];
+    if (getVoxel(gx, gy + 1, gz) !== 0) continue;
+    const r = rng();
+    if (r < 0.76) setVoxel(gx, gy + 1, gz, packColor(210 + (rng() - 0.5) * 22, 178 + (rng() - 0.5) * 18, 68, 2));
+    else if (r < 0.90) setVoxel(gx, gy + 1, gz, packColor(238, 202, 56, 1));
+    else setVoxel(gx, gy + 1, gz, packColor(156, 148, 138, 2));
+  }
+}
+
+// ============================================================================
+// 9. POPULATE 3.33x FINER VOXEL GRID FOR THE FOUR PRESIDENTS & CLIFF ALCOVE
+// ============================================================================
+const V_FINE = 0.30; // 3.33x finer voxel resolution (~3x finer, incommensurate with 1.0 so zero coplanar Z-fighting!)
+const FINE_OX = FINE_WX0 + 0.031;
+const FINE_OY = FINE_WY0 + 0.031;
+const FINE_OZ = FINE_WZ0 + 0.031;
+const FX_COUNT = Math.ceil((FINE_WX1 - FINE_WX0) / V_FINE); // 204
+const FY_COUNT = Math.ceil((FINE_WY1 - FINE_WY0) / V_FINE); // 80
+const FZ_COUNT = Math.ceil((FINE_WZ1 - FINE_WZ0) / V_FINE); // 77
+const fineGrid = new Uint32Array(FX_COUNT * FY_COUNT * FZ_COUNT);
+
+function fIdx(ix, iy, iz) {
+  return (iy * FZ_COUNT + iz) * FX_COUNT + ix;
+}
+
+for (let iy = 0; iy < FY_COUNT; iy++) {
+  const wy = FINE_OY + (iy + 0.5) * V_FINE;
+  for (let iz = 0; iz < FZ_COUNT; iz++) {
+    const wz = FINE_OZ + (iz + 0.5) * V_FINE;
+    for (let ix = 0; ix < FX_COUNT; ix++) {
+      const wx = FINE_OX + (ix + 0.5) * V_FINE;
+      const env = evalFineSculptEnvelope(wx, wy, wz);
+      if (env <= 0.20) continue; // Outside organic sculpt socket — handled by chunky coarse granite!
+
+      const sculptWeight = smoothstep(0.26, 0.68, env);
+      let d, rockType = 0, crownFade = 1.0, recess = 0.0, featureType = 0;
+      if (sculptWeight < 0.001) {
+        d = naturalMountainSDF(wx, wy, wz);
+      } else {
+        const res = evalRushmoreFineZone(wx, wy, wz);
+        d = sculptWeight > 0.999 ? res.d : mix(naturalMountainSDF(wx, wy, wz), res.d, sculptWeight);
+        rockType = res.rockType;
+        crownFade = res.crownFade;
+        recess = res.recess * sculptWeight;
+        featureType = sculptWeight > 0.85 ? res.featureType : 0;
+      }
+
+      if (d <= 0.0) {
+        const jit = (hash3i(ix, iy, iz) - 0.5) * 9;
+        const nCliff = (fbm3(wx * 0.22, wy * 0.22, wz * 0.22, 2) - 0.5) * 26;
+        const natR = 165 + nCliff + jit;
+        const natG = 145 + nCliff * 0.9 + jit;
+        const natB = 123 + nCliff * 0.8 + jit;
+
+        let r, g, b;
+        if (featureType === 1) {
+          // Borglum's sunlit granite pupil peg catching warm golden sunlight!
+          r = 228; g = 215; b = 196;
+        } else if (featureType === 2) {
+          // Roosevelt's crisp sculpted pince-nez glasses rims & arched spring nose-bridge!
+          r = 212 + jit * 0.35; g = 198 + jit * 0.35; b = 180 + jit * 0.35;
+        } else if (featureType === 3) {
+          // Lincoln's prominent raised right-cheek mole!
+          r = 196 + jit * 0.4; g = 180 + jit * 0.4; b = 162 + jit * 0.4;
+        } else if (rockType === 1) {
+          const shade = 1.0 - recess * 0.55;
+          const coolShift = recess * 16.5;
+          const cr = (222 + jit * 0.55) * shade - coolShift * 0.5;
+          const cg = (208 + jit * 0.55) * shade - coolShift * 0.25;
+          const cb = (190 + jit * 0.55) * shade + coolShift * 0.2;
+          let w = clamp((crownFade - 0.35) / 0.65, 0.0, 1.0) * sculptWeight;
+          if (featureType === 4) w *= 0.28; // Roosevelt's sculpted parted hair crown blends into warm cliff granite!
+          r = mix(natR, cr, w);
+          g = mix(natG, cg, w);
+          b = mix(natB, cb, w);
+        } else if (rockType === 2) {
+          const drillStripe = ((iy % 3 === 0 && ix % 2 === 0) ? -12 : 4);
+          r = mix(natR, 195 + jit + drillStripe, sculptWeight);
+          g = mix(natG, 189 + jit + drillStripe, sculptWeight);
+          b = mix(natB, 181 + jit + drillStripe, sculptWeight);
+        } else {
+          r = natR; g = natG; b = natB;
+        }
+        fineGrid[fIdx(ix, iy, iz)] = packColor(r, g, b, rockType === 1 ? 1 : 2);
+      }
+    }
+  }
+}
+
+// Snapshots inmutables para restaurar toda la isla al 100% con el botón "Reiniciar Isla"
+const initialCoarseGrid = coarseGrid.slice();
+const initialWaterGrid  = waterGrid.slice();
+const initialFineGrid   = fineGrid.slice();
+
+// ============================================================================
+// 10. CHUNKED HIDDEN-FACE-CULLED VOXEL MESHER WITH BAKED AO & DYNAMIC REMESHING
+// ============================================================================
+const FACES = [
+  { n: [ 0,  0,  1], o: [0, 0, 1], t: [ 1, 0,  0], b: [0, 1,  0] },
+  { n: [ 0,  0, -1], o: [1, 0, 0], t: [-1, 0,  0], b: [0, 1,  0] },
+  { n: [ 1,  0,  0], o: [1, 0, 1], t: [ 0, 0, -1], b: [0, 1,  0] },
+  { n: [-1,  0,  0], o: [0, 0, 0], t: [ 0, 0,  1], b: [0, 1,  0] },
+  { n: [ 0,  1,  0], o: [0, 1, 1], t: [ 1, 0,  0], b: [0, 0, -1] },
+  { n: [ 0, -1,  0], o: [0, 0, 0], t: [ 1, 0,  0], b: [0, 0,  1] },
+];
+
+function buildChunkedVoxelMeshes({
+  nx, ny, nz,
+  originX, originY, originZ,
+  voxelSize,
+  chunkSize,
+  getCell,
+  isOccluder,
+  material,
+  castShadow = true,
+  receiveShadow = true,
+  cavitySteps = 2,
+}) {
+  const group = new THREE.Group();
+  const chunkMap = new Map();
+  const pendingDirty = new Set();
+  const everModified = new Set();
+  let totalFaces = 0;
+
+  function buildSingleChunk(cx0, cy0, cz0) {
+    const key = `${cx0},${cy0},${cz0}`;
+    const oldEntry = chunkMap.get(key);
+    if (oldEntry) {
+      totalFaces -= oldEntry.faces;
+      group.remove(oldEntry.mesh);
+      oldEntry.mesh.geometry.dispose();
+      chunkMap.delete(key);
+    }
+
+    const cx1 = Math.min(nx, cx0 + chunkSize);
+    const cy1 = Math.min(ny, cy0 + chunkSize);
+    const cz1 = Math.min(nz, cz0 + chunkSize);
+
+    const pos = [], nor = [], col = [], fuv = [], edg = [], aoArr = [], idx = [];
+    let vCount = 0;
+    let chunkFaces = 0;
+
+    for (let iy = cy0; iy < cy1; iy++) {
+      for (let iz = cz0; iz < cz1; iz++) {
+        for (let ix = cx0; ix < cx1; ix++) {
+          const packed = getCell(ix, iy, iz);
+          if (packed === 0) continue;
+
+          const jTier = (packed >>> 24) & 0x7f;
+          const jAmp = jTier === 0 ? 0.0 : jTier === 1 ? 0.018 : jTier === 2 ? 0.035 : 0.05;
+          const jit = (hash3i(ix + 101, iy - 53, iz + 29) - 0.5) * 2.0 * jAmp;
+
+          const sr = clamp(((packed >>> 16) & 0xff) / 255.0 + jit, 0.0, 1.0);
+          const sg = clamp(((packed >>> 8) & 0xff) / 255.0 + jit * 0.92, 0.0, 1.0);
+          const sb = clamp((packed & 0xff) / 255.0 + jit * 0.85, 0.0, 1.0);
+          const lr = Math.pow(sr, 2.2), lg = Math.pow(sg, 2.2), lb = Math.pow(sb, 2.2);
+
+          const wx = originX + ix * voxelSize;
+          const wy = originY + iy * voxelSize;
+          const wz = originZ + iz * voxelSize;
+
+          for (let f = 0; f < 6; f++) {
+            const fc = FACES[f];
+            const nxDir = fc.n[0], nyDir = fc.n[1], nzDir = fc.n[2];
+            const adjX = ix + nxDir, adjY = iy + nyDir, adjZ = iz + nzDir;
+
+            if (isOccluder(adjX, adjY, adjZ)) continue;
+
+            const tx = fc.t[0], ty = fc.t[1], tz = fc.t[2];
+            const bx = fc.b[0], by = fc.b[1], bz = fc.b[2];
+
+            const evalEdge = (dx, dy, dz) => {
+              if (isOccluder(adjX + dx, adjY + dy, adjZ + dz)) return -0.55;
+              if (!isOccluder(ix + dx, iy + dy, iz + dz)) return 1.0;
+              return 0.32;
+            };
+            const eL = evalEdge(-tx, -ty, -tz);
+            const eR = evalEdge( tx,  ty,  tz);
+            const eB = evalEdge(-bx, -by, -bz);
+            const eT = evalEdge( bx,  by,  bz);
+
+            let cavityOcc = 0.0;
+            for (let s = 2; s <= cavitySteps + 1; s++) {
+              if (isOccluder(ix + nxDir * s, iy + nyDir * s, iz + nzDir * s)) cavityOcc += 0.10;
+            }
+
+            const vAO = [0, 0, 0, 0];
+            const signs = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+            for (let c = 0; c < 4; c++) {
+              const st = signs[c][0], sbSign = signs[c][1];
+              const s1 = isOccluder(adjX + st * tx, adjY + st * ty, adjZ + st * tz) ? 1 : 0;
+              const s2 = isOccluder(adjX + sbSign * bx, adjY + sbSign * by, adjZ + sbSign * bz) ? 1 : 0;
+              const cr = (s1 && s2) ? 1 : (isOccluder(adjX + st * tx + sbSign * bx, adjY + st * ty + sbSign * by, adjZ + st * tz + sbSign * bz) ? 1 : 0);
+              vAO[c] = clamp(1.0 - ((s1 + s2 + cr) / 3.0) * 0.58 - cavityOcc, 0.22, 1.0);
+            }
+
+            const ox = wx + fc.o[0] * voxelSize;
+            const oy = wy + fc.o[1] * voxelSize;
+            const oz = wz + fc.o[2] * voxelSize;
+            const tvsX = tx * voxelSize, tvsY = ty * voxelSize, tvsZ = tz * voxelSize;
+            const bvsX = bx * voxelSize, bvsY = by * voxelSize, bvsZ = bz * voxelSize;
+
+            pos.push(
+              ox, oy, oz,
+              ox + tvsX, oy + tvsY, oz + tvsZ,
+              ox + tvsX + bvsX, oy + tvsY + bvsY, oz + tvsZ + bvsZ,
+              ox + bvsX, oy + bvsY, oz + bvsZ
+            );
+            for (let k = 0; k < 4; k++) {
+              nor.push(nxDir, nyDir, nzDir);
+              col.push(lr, lg, lb);
+              edg.push(eL, eR, eB, eT);
+            }
+            fuv.push(0, 0, 1, 0, 1, 1, 0, 1);
+            aoArr.push(vAO[0], vAO[1], vAO[2], vAO[3]);
+
+            if (vAO[0] + vAO[2] > vAO[1] + vAO[3]) {
+              idx.push(vCount, vCount + 1, vCount + 2, vCount, vCount + 2, vCount + 3);
+            } else {
+              idx.push(vCount + 1, vCount + 2, vCount + 3, vCount + 1, vCount + 3, vCount);
+            }
+            vCount += 4;
+            chunkFaces++;
+          }
+        }
+      }
+    }
+
+    if (vCount > 0) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geo.setAttribute('aFaceUv', new THREE.Float32BufferAttribute(fuv, 2));
+      geo.setAttribute('aEdgeMask', new THREE.Float32BufferAttribute(edg, 4));
+      geo.setAttribute('aAO', new THREE.Float32BufferAttribute(aoArr, 1));
+      geo.setIndex(idx);
+      geo.computeBoundingSphere();
+
+      const mesh = new THREE.Mesh(geo, material);
+      mesh.castShadow = castShadow;
+      mesh.receiveShadow = receiveShadow;
+      mesh.matrixAutoUpdate = false;
+      mesh.updateMatrix();
+      group.add(mesh);
+      chunkMap.set(key, { mesh, faces: chunkFaces });
+      totalFaces += chunkFaces;
+    }
+  }
+
+  for (let cy0 = 0; cy0 < ny; cy0 += chunkSize) {
+    for (let cz0 = 0; cz0 < nz; cz0 += chunkSize) {
+      for (let cx0 = 0; cx0 < nx; cx0 += chunkSize) {
+        buildSingleChunk(cx0, cy0, cz0);
+      }
+    }
+  }
+
+  function markDirtyCell(ix, iy, iz) {
+    const pad = 2;
+    const xMin = clamp(Math.floor((ix - pad) / chunkSize) * chunkSize, 0, nx - 1);
+    const xMax = clamp(Math.floor((ix + pad) / chunkSize) * chunkSize, 0, nx - 1);
+    const yMin = clamp(Math.floor((iy - pad) / chunkSize) * chunkSize, 0, ny - 1);
+    const yMax = clamp(Math.floor((iy + pad) / chunkSize) * chunkSize, 0, ny - 1);
+    const zMin = clamp(Math.floor((iz - pad) / chunkSize) * chunkSize, 0, nz - 1);
+    const zMax = clamp(Math.floor((iz + pad) / chunkSize) * chunkSize, 0, nz - 1);
+    for (let cy0 = yMin; cy0 <= yMax; cy0 += chunkSize) {
+      for (let cz0 = zMin; cz0 <= zMax; cz0 += chunkSize) {
+        for (let cx0 = xMin; cx0 <= xMax; cx0 += chunkSize) {
+          const k = `${cx0},${cy0},${cz0}`;
+          pendingDirty.add(k);
+          everModified.add(k);
+        }
+      }
+    }
+  }
+
+  function flushDirty() {
+    if (pendingDirty.size === 0) return false;
+    for (const key of pendingDirty) {
+      const [cx0, cy0, cz0] = key.split(',').map(Number);
+      buildSingleChunk(cx0, cy0, cz0);
+    }
+    pendingDirty.clear();
+    return true;
+  }
+
+  function resetAllModified() {
+    if (everModified.size === 0) return false;
+    for (const key of everModified) {
+      const [cx0, cy0, cz0] = key.split(',').map(Number);
+      buildSingleChunk(cx0, cy0, cz0);
+    }
+    everModified.clear();
+    pendingDirty.clear();
+    return true;
+  }
+
+  return { group, get totalFaces() { return totalFaces; }, markDirtyCell, flushDirty, resetAllModified };
+}
+
+const coarseResult = buildChunkedVoxelMeshes({
+  nx: NX, ny: NY, nz: NZ,
+  originX: GX0 - 0.5, originY: GY0 - 0.5, originZ: GZ0 - 0.5,
+  voxelSize: 1.0,
+  chunkSize: 18,
+  getCell: (ix, iy, iz) => coarseGrid[(iy * NZ + iz) * NX + ix],
+  isOccluder: (ix, iy, iz) => {
+    if (ix < 0 || ix >= NX || iy < 0 || iy >= NY || iz < 0 || iz >= NZ) return false;
+    return coarseGrid[(iy * NZ + iz) * NX + ix] !== 0;
+  },
+  material: coarseVoxelMat,
+  cavitySteps: 2,
+});
+scene.add(coarseResult.group);
+
+const waterResult = buildChunkedVoxelMeshes({
+  nx: NX, ny: NY, nz: NZ,
+  originX: GX0 - 0.5, originY: GY0 - 0.5, originZ: GZ0 - 0.5,
+  voxelSize: 1.0,
+  chunkSize: 24,
+  getCell: (ix, iy, iz) => waterGrid[(iy * NZ + iz) * NX + ix],
+  isOccluder: (ix, iy, iz) => {
+    if (ix < 0 || ix >= NX || iy < 0 || iy >= NY || iz < 0 || iz >= NZ) return false;
+    const flat = (iy * NZ + iz) * NX + ix;
+    return waterGrid[flat] !== 0 || coarseGrid[flat] !== 0;
+  },
+  material: waterVoxelMat,
+  castShadow: false,
+  receiveShadow: true,
+  cavitySteps: 1,
+});
+scene.add(waterResult.group);
+
+const fineResult = buildChunkedVoxelMeshes({
+  nx: FX_COUNT, ny: FY_COUNT, nz: FZ_COUNT,
+  originX: FINE_OX, originY: FINE_OY, originZ: FINE_OZ,
+  voxelSize: V_FINE,
+  chunkSize: 30,
+  getCell: (ix, iy, iz) => fineGrid[fIdx(ix, iy, iz)],
+  isOccluder: (ix, iy, iz) => {
+    if (ix >= 0 && ix < FX_COUNT && iy >= 0 && iy < FY_COUNT && iz >= 0 && iz < FZ_COUNT) {
+      if (fineGrid[fIdx(ix, iy, iz)] !== 0) return true;
+      const wx = FINE_OX + (ix + 0.5) * V_FINE;
+      const wy = FINE_OY + (iy + 0.5) * V_FINE;
+      const wz = FINE_OZ + (iz + 0.5) * V_FINE;
+      if (evalFineSculptEnvelope(wx, wy, wz) <= 0.20) {
+        return getVoxel(Math.round(wx), Math.round(wy), Math.round(wz)) !== 0;
+      }
+      return false;
+    }
+    const wx = Math.round(FINE_OX + (ix + 0.5) * V_FINE);
+    const wy = Math.round(FINE_OY + (iy + 0.5) * V_FINE);
+    const wz = Math.round(FINE_OZ + (iz + 0.5) * V_FINE);
+    return getVoxel(wx, wy, wz) !== 0;
+  },
+  material: fineFaceVoxelMat,
+  cavitySteps: 4,
+});
+scene.add(fineResult.group);
+
+function buildMiniVoxelMesh(voxels, voxelSize = 1.0, mat = coarseVoxelMat, castShadow = true) {
+  const map = new Map();
+  const key = (x, y, z) => `${x},${y},${z}`;
+  let minX = 1e9, minY = 1e9, minZ = 1e9, maxX = -1e9, maxY = -1e9, maxZ = -1e9;
+  for (const v of voxels) {
+    map.set(key(v.x, v.y, v.z), v.c);
+    if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x;
+    if (v.y < minY) minY = v.y; if (v.y > maxY) maxY = v.y;
+    if (v.z < minZ) minZ = v.z; if (v.z > maxZ) maxZ = v.z;
+  }
+  const nx = maxX - minX + 1, ny = maxY - minY + 1, nz = maxZ - minZ + 1;
+  return buildChunkedVoxelMeshes({
+    nx, ny, nz,
+    originX: (minX - 0.5) * voxelSize,
+    originY: (minY - 0.5) * voxelSize,
+    originZ: (minZ - 0.5) * voxelSize,
+    voxelSize,
+    chunkSize: Math.max(nx, ny, nz) + 1,
+    getCell: (ix, iy, iz) => map.get(key(minX + ix, minY + iy, minZ + iz)) || 0,
+    isOccluder: (ix, iy, iz) => map.has(key(minX + ix, minY + iy, minZ + iz)),
+    material: mat,
+    castShadow,
+    receiveShadow: true,
+    cavitySteps: 1,
+  }).group;
+}
+
+const forgeEmissiveMesh = buildMiniVoxelMesh(
+  forgeGlowVoxels.map((v) => ({ x: v.x, y: v.y, z: v.z, c: hexToPacked(v.c, 0) })),
+  1.0,
+  glowForgeMat,
+  false
+);
+scene.add(forgeEmissiveMesh);
+
+// ============================================================================
+// 11. DRIFTING FLOATING ISLETS WITH PINES & SUNLIT VOXEL CLOUDS
+// ============================================================================
+const floatingIslets = [];
+{
+  const isletDefs = [
+    { x: -64, y: 12, z: 16, r: 4.8, pines: 2, phase: 0.4 },
+    { x: -55, y:  0, z: 36, r: 3.8, pines: 1, phase: 1.9 },
+    { x:  63, y: 13, z: 18, r: 5.0, pines: 3, phase: 3.1 },
+    { x:  54, y:  1, z: 40, r: 3.8, pines: 1, phase: 4.5 },
+    { x: -46, y: 27, z: -24, r: 4.4, pines: 2, phase: 2.3 },
+    { x:  47, y: 26, z: -22, r: 4.4, pines: 2, phase: 5.4 },
+  ];
+  const rng = mulberry32(771939);
+  for (const def of isletDefs) {
+    const vox = [];
+    const voxelSet = new Set();
+    const R = Math.ceil(def.r);
+    for (let dx = -R; dx <= R; dx++) {
+      for (let dz = -R; dz <= R; dz++) {
+        const d = Math.hypot(dx, dz) + (rng() - 0.5) * 0.85;
+        if (d > def.r) continue;
+        const f = d / def.r;
+        const bot = -Math.round((1.0 - f * f) * (def.r * 1.5) + (d < 1.5 ? 2.2 : 0));
+        for (let dy = bot; dy <= 0; dy++) {
+          const c = dy === 0
+            ? (rng() > 0.35 ? packColor(94, 128, 56, 2) : packColor(190, 160, 68, 2))
+            : strataColor(dx + def.x, dy, dz + def.z);
+          vox.push({ x: dx, y: dy, z: dz, c });
+          voxelSet.add(`${dx},${dy},${dz}`);
+        }
+      }
+    }
+    for (let p = 0; p < def.pines; p++) {
+      const px = p === 0 ? 0 : (p === 1 ? -2 : 2);
+      const pz = p === 0 ? 0 : (p === 1 ? 1 : -1);
+      const ph = 5 + (p === 0 ? 2 : 0);
+      for (let y = 1; y <= ph; y++) {
+        if (y <= 2) {
+          vox.push({ x: px, y, z: pz, c: packColor(92, 62, 40, 1) });
+          voxelSet.add(`${px},${y},${pz}`);
+        }
+        if (y >= 2) {
+          const cr = Math.max(0, Math.round((1.0 - (y - 2) / (ph - 1)) * 2.1));
+          for (let tx = -cr; tx <= cr; tx++)
+            for (let tz = -cr; tz <= cr; tz++)
+              if (Math.hypot(tx, tz) <= cr + 0.25) {
+                vox.push({ x: px + tx, y, z: pz + tz, c: y % 2 === 0 ? packColor(28, 64, 40, 2) : packColor(44, 86, 50, 2) });
+                voxelSet.add(`${px + tx},${y},${pz + tz}`);
+              }
+        }
+      }
+    }
+    const grp = buildMiniVoxelMesh(vox, 1.0, coarseVoxelMat, false);
+    grp.position.set(def.x, def.y, def.z);
+    scene.add(grp);
+    floatingIslets.push({
+      grp, baseX: def.x, baseY: def.y, baseZ: def.z, phase: def.phase,
+      voxelSet, radius: def.r + 2, prevPos: new THREE.Vector3(def.x, def.y, def.z),
+    });
+  }
+}
+
+const voxelClouds = [];
+{
+  const cloudMat = createVoxelMaterial({ roughness: 0.92, metalness: 0.0, bevelStrength: 0.35 });
+  const cloudDefs = [
+    { x: -54, y: 40, z: -22, sx: 7.5, sy: 2.5, sz: 4.2, speed: 0.38 },
+    { x: -26, y: 48, z: -34, sx: 9.5, sy: 2.8, sz: 4.8, speed: 0.32 },
+    { x:  25, y: 47, z: -32, sx: 9.0, sy: 2.7, sz: 4.6, speed: 0.35 },
+    { x:  56, y: 39, z: -18, sx: 8.0, sy: 2.4, sz: 4.0, speed: 0.42 },
+    { x: -60, y: 28, z:  10, sx: 6.0, sy: 2.0, sz: 3.4, speed: 0.45 },
+    { x:  60, y: 29, z:   8, sx: 6.5, sy: 2.1, sz: 3.6, speed: 0.40 },
+  ];
+  const rng = mulberry32(551939);
+  for (const cd of cloudDefs) {
+    const vox = [];
+    const voxelSet = new Set();
+    const blobs = [
+      { ox: 0, oy: 0.5, oz: 0, rx: cd.sx * 0.55, ry: cd.sy, rz: cd.sz * 0.6 },
+      { ox: -cd.sx * 0.42, oy: -0.2, oz: 0.4, rx: cd.sx * 0.45, ry: cd.sy * 0.78, rz: cd.sz * 0.5 },
+      { ox:  cd.sx * 0.44, oy: -0.1, oz: -0.3, rx: cd.sx * 0.46, ry: cd.sy * 0.82, rz: cd.sz * 0.52 },
+    ];
+    const bxMax = Math.ceil(cd.sx), byMax = Math.ceil(cd.sy + 1), bzMax = Math.ceil(cd.sz);
+    for (let x = -bxMax; x <= bxMax; x++) {
+      for (let y = -byMax; y <= byMax; y++) {
+        for (let z = -bzMax; z <= bzMax; z++) {
+          let inside = false;
+          for (const b of blobs) {
+            if (Math.hypot((x - b.ox) / b.rx, (y - b.oy) / b.ry, (z - b.oz) / b.rz) <= 1.0) { inside = true; break; }
+          }
+          if (inside && y >= -1) {
+            const topT = clamp((y + 1) / (byMax + 1), 0, 1);
+            const sunEdge = clamp((x / bxMax) * 0.5 + 0.5, 0, 1);
+            vox.push({
+              x, y, z,
+              c: packColor(
+                mix(216, 252, topT) + sunEdge * 3 + (rng() - 0.5) * 6,
+                mix(182, 236, topT) + (rng() - 0.5) * 6,
+                mix(172, 212, topT) - sunEdge * 8 + (rng() - 0.5) * 6,
+                0
+              ),
+            });
+            voxelSet.add(`${x},${y},${z}`);
+          }
+        }
+      }
+    }
+    const grp = buildMiniVoxelMesh(vox, 1.1, cloudMat, false);
+    grp.position.set(cd.x, cd.y, cd.z);
+    scene.add(grp);
+    voxelClouds.push({
+      grp, baseX: cd.x, baseY: cd.y, baseZ: cd.z, speed: cd.speed,
+      voxelSet, sx: bxMax * 1.2 + 2, sy: byMax * 1.2 + 2, sz: bzMax * 1.2 + 2,
+      prevPos: new THREE.Vector3(cd.x, cd.y, cd.z),
+    });
+  }
+}
+
+// ============================================================================
+// 12. AERIAL TRAMWAY CABLE (LEFT FLANK TO SUMMIT), 1930s TRUCKS & EL SALVADOR FLAGS 🇸🇻
+// ============================================================================
+const TRAM_START = new THREE.Vector3(-28.0, 15.0, 27.0);
+const TRAM_END   = new THREE.Vector3(-30.0, 45.0, 1.0);
+function evalTramCablePos(u, xOffset = 0) {
+  const p = new THREE.Vector3().lerpVectors(TRAM_START, TRAM_END, u);
+  p.x += xOffset;
+  p.y -= Math.sin(u * Math.PI) * 2.4;
+  return p;
+}
+{
+  const cableMat = new THREE.MeshStandardMaterial({ color: 0x3b4048, roughness: 0.45, metalness: 0.65 });
+  for (const xOff of [-0.55, 0.55]) {
+    const pts = [];
+    for (let i = 0; i <= 40; i++) pts.push(evalTramCablePos(i / 40, xOff));
+    const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.09, 6, false);
+    scene.add(new THREE.Mesh(tube, cableMat));
+  }
+}
+
+const tramCarGroup = new THREE.Group();
+{
+  const vox = [];
+  const red = packColor(184, 54, 42, 1);
+  const wood = packColor(172, 132, 84, 1);
+  const iron = packColor(62, 66, 72, 1);
+  for (let y = 0; y >= -4; y--) vox.push({ x: 0, y, z: 0, c: iron });
+  vox.push({ x: -1, y: 0, z: 0, c: iron }, { x: 1, y: 0, z: 0, c: iron });
+  for (let x = -2; x <= 2; x++) {
+    for (let z = -2; z <= 2; z++) {
+      vox.push({ x, y: -7, z, c: iron });
+      if (Math.abs(x) === 2 || Math.abs(z) === 2) {
+        vox.push({ x, y: -6, z, c: red });
+        vox.push({ x, y: -5, z, c: wood });
+      }
+    }
+  }
+  tramCarGroup.add(buildMiniVoxelMesh(vox, 0.45, coarseVoxelMat, false));
+  scene.add(tramCarGroup);
+}
+
+const movingTrucks = [];
+{
+  const truckColors = [0x2b5438, 0x943428, 0x2c4a6c];
+  for (let i = 0; i < 3; i++) {
+    const vox = [];
+    const cab = hexToPacked(truckColors[i], 1);
+    const fender = packColor(38, 36, 38, 1);
+    const wood = packColor(168, 128, 80, 1);
+    const tire = packColor(28, 28, 32, 1);
+    const crate = packColor(196, 162, 104, 1);
+    const lamp = packColor(250, 228, 154, 0);
+
+    for (let z = -4; z <= 4; z++)
+      for (let x = -2; x <= 2; x++)
+        vox.push({ x, y: 1, z, c: fender });
+    for (const wx of [-2, 2])
+      for (const wz of [-3, 3]) {
+        vox.push({ x: wx, y: 0, z: wz, c: tire });
+        vox.push({ x: wx, y: 1, z: wz, c: tire });
+      }
+    for (let z = 2; z <= 4; z++)
+      for (let x = -1; x <= 1; x++) {
+        vox.push({ x, y: 2, z, c: cab });
+        vox.push({ x, y: 3, z, c: cab });
+      }
+    vox.push({ x: -2, y: 2, z: 4, c: lamp }, { x: 2, y: 2, z: 4, c: lamp });
+    for (let z = 0; z <= 1; z++)
+      for (let x = -2; x <= 2; x++)
+        for (let y = 2; y <= 5; y++) {
+          if (y === 4 && z === 1 && Math.abs(x) <= 1) continue;
+          vox.push({ x, y, z, c: cab });
+        }
+    for (let z = -4; z <= -1; z++)
+      for (let x = -2; x <= 2; x++) {
+        vox.push({ x, y: 2, z, c: wood });
+        if (Math.abs(x) === 2 || z === -4) vox.push({ x, y: 3, z, c: wood });
+        else vox.push({ x, y: 3, z, c: i === 1 ? packColor(200, 198, 194, 2) : crate });
+      }
+    const grp = buildMiniVoxelMesh(vox, 0.38, coarseVoxelMat, false);
+    scene.add(grp);
+    movingTrucks.push({ grp, baseU: 0.08 + i * 0.29, speed: 0.022 + i * 0.003 });
+  }
+}
+
+function createBeveledUnitCubeGeo() {
+  const pos = [], nor = [], col = [], fuv = [], edg = [], ao = [], idx = [];
+  let vc = 0;
+  for (let f = 0; f < 6; f++) {
+    const fc = FACES[f];
+    const ox = fc.o[0] - 0.5, oy = fc.o[1] - 0.5, oz = fc.o[2] - 0.5;
+    const tx = fc.t[0], ty = fc.t[1], tz = fc.t[2];
+    const bx = fc.b[0], by = fc.b[1], bz = fc.b[2];
+    pos.push(ox, oy, oz, ox + tx, oy + ty, oz + tz, ox + tx + bx, oy + ty + by, oz + tz + bz, ox + bx, oy + by, oz + bz);
+    for (let k = 0; k < 4; k++) {
+      nor.push(fc.n[0], fc.n[1], fc.n[2]);
+      col.push(1, 1, 1);
+      edg.push(1, 1, 1, 1);
+      ao.push(fc.n[1] < -0.5 ? 0.65 : 0.96);
+    }
+    fuv.push(0, 0, 1, 0, 1, 1, 0, 1);
+    idx.push(vc, vc + 1, vc + 2, vc, vc + 2, vc + 3);
+    vc += 4;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setAttribute('aFaceUv', new THREE.Float32BufferAttribute(fuv, 2));
+  geo.setAttribute('aEdgeMask', new THREE.Float32BufferAttribute(edg, 4));
+  geo.setAttribute('aAO', new THREE.Float32BufferAttribute(ao, 1));
+  geo.setIndex(idx);
+  return geo;
+}
+
+const unitBoxGeo = createBeveledUnitCubeGeo();
+
+// 🇸🇻 Bandera de El Salvador Ondeando (Plaza del Campamento en (3, 18, 41) + Cima en (0, 44, -5))
+const flagColumns = [];
+{
+  const flagIM = new THREE.InstancedMesh(unitBoxGeo, coarseVoxelMat, 16 * 10 + 10 * 6);
+  scene.add(flagIM);
+  let idx = 0;
+  const svBlue  = 0x0f47af; // Azul Cobalto de El Salvador
+  const svWhite = 0xf4f7fc; // Blanco puro central
+  const svGold  = 0xeab308; // Escudo Nacional dorado
+  const svGreen = 0x2e8b57; // Laureles del Escudo Nacional
+
+  for (let col = 0; col < 16; col++) {
+    for (let row = 0; row < 10; row++) {
+      let hex;
+      if (row <= 2 || row >= 7) {
+        hex = svBlue;
+      } else if (col >= 6 && col <= 8 && (row === 4 || row === 5)) {
+        hex = (col === 7 && row === 5) ? svGold : (row === 4 && (col === 6 || col === 8) ? svGreen : svGold);
+      } else {
+        hex = svWhite;
+      }
+      flagIM.setColorAt(idx, new THREE.Color(hex));
+      flagColumns.push({ idx, poleX: 3.18, poleY: 15.3, poleZ: 41.0, col, row, s: 0.25 });
+      idx++;
+    }
+  }
+  fillBox(0, 42, -5, 0, 46, -5, packColor(225, 220, 210, 0));
+  for (let col = 0; col < 10; col++) {
+    for (let row = 0; row < 6; row++) {
+      let hex;
+      if (row <= 1 || row >= 4) {
+        hex = svBlue;
+      } else if ((col === 4 || col === 5) && (row === 2 || row === 3)) {
+        hex = col === 4 && row === 3 ? svGold : svGreen;
+      } else {
+        hex = svWhite;
+      }
+      flagIM.setColorAt(idx, new THREE.Color(hex));
+      flagColumns.push({ idx, poleX: 0.15, poleY: 44.6, poleZ: -5.0, col, row, s: 0.20 });
+      idx++;
+    }
+  }
+  flagIM.instanceColor.needsUpdate = true;
+  window.__flagIM = flagIM;
+}
+
+// ============================================================================
+// 13. CARVERS IN BOSUN'S CHAIRS, WORKERS, TOURISTS WITH PARASOLS, BIRDS & PARTICLES
+// ============================================================================
+const CARVERS = [
+  { anchor: [-25.0, 38.4, 8.2], base: [-25.2, 28.6, 13.4], freq: 1.35, phase: 0.2, swing: 0.34 },
+  { anchor: [-15.4, 38.4, 8.6], base: [-15.2, 23.6, 14.2], freq: 1.18, phase: 1.7, swing: 0.38 },
+  { anchor: [-11.2, 39.2, 5.5], base: [-11.2, 32.8, 10.6], freq: 1.42, phase: 2.8, swing: 0.30 },
+  { anchor: [-3.2,  38.2, 5.2], base: [-3.2,  25.4, 10.8], freq: 1.25, phase: 0.9, swing: 0.36 },
+  { anchor: [ 1.4,  36.8, 1.8], base: [ 1.4,  24.4,  8.6], freq: 1.30, phase: 3.6, swing: 0.28 },
+  { anchor: [ 9.2,  36.8, 2.2], base: [ 9.2,  30.8,  8.2], freq: 1.48, phase: 5.1, swing: 0.28 },
+  { anchor: [13.4,  38.4, 7.2], base: [13.2,  32.6, 11.8], freq: 1.22, phase: 2.1, swing: 0.34 },
+  { anchor: [21.6,  38.0, 6.8], base: [21.6,  25.0, 12.4], freq: 1.36, phase: 4.3, swing: 0.38 },
+];
+
+const bosunCableMeshes = [];
+{
+  const cGeo = new THREE.CylinderGeometry(0.048, 0.048, 1.0, 5);
+  const cMat = new THREE.MeshStandardMaterial({ color: 0x3e444e, metalness: 0.7, roughness: 0.4 });
+  for (let i = 0; i < CARVERS.length; i++) {
+    const m = new THREE.Mesh(cGeo, cMat);
+    scene.add(m);
+    bosunCableMeshes.push(m);
+  }
+}
+
+const PEOPLE = [];
+{
+  const rng = mulberry32(19390901);
+  for (let i = 0; i < CARVERS.length; i++) {
+    PEOPLE.push({ role: 'carver', carverIdx: i, shirt: i % 2 === 0 ? 0xd8cdb8 : 0x6b86a4, pants: 0x3b4d68, hat: 0xc8b278, phase: i * 1.1 });
+  }
+
+  const ledgeSpots = [
+    { x: -7.5, y: 20.5, z: 12.0, tool: 'drill' },
+    { x: -3.0, y: 20.5, z: 12.0, tool: 'hammer' },
+    { x:  2.0, y: 20.5, z: 10.0, tool: 'drill' },
+    { x:  6.5, y: 20.5, z: 10.0, tool: 'hammer' },
+    { x: 10.5, y: 20.5, z: 12.0, tool: 'drill' },
+    { x: 14.0, y: 20.5, z: 12.0, tool: 'hammer' },
+  ];
+  for (let i = 0; i < ledgeSpots.length; i++) {
+    const s = ledgeSpots[i];
+    PEOPLE.push({
+      role: s.tool === 'drill' ? 'ledge_drill' : 'ledge_hammer',
+      x: s.x, y: s.y, z: s.z,
+      yaw: Math.PI + (rng() - 0.5) * 0.35,
+      shirt: i % 2 === 0 ? 0xc9beab : 0x7b5c44, pants: 0x3a4962, hat: 0xd4be84, phase: i * 1.37,
+    });
+  }
+
+  for (let i = 0; i < 4; i++) {
+    PEOPLE.push({ role: 'wheelbarrow', slot: i, shirt: i % 2 === 0 ? 0xb86b48 : 0x627c8e, pants: 0x3d4858, hat: 0xc4a86e, phase: i * 1.65 });
+  }
+
+  const campRoutes = [
+    { ax: -14, az: 41, bx: -6,  bz: 38, y: 5.6 },
+    { ax: -18, az: 33, bx: -12, bz: 38, y: 5.6 },
+    { ax:   9, az: 36, bx:   1, bz: 39, y: 5.6 },
+    { ax:  -9, az: 39, bx:  -2, bz: 38, y: 5.6 },
+    { ax:   6, az: 39, bx:  11, bz: 36, y: 5.6 },
+  ];
+  for (let i = 0; i < campRoutes.length; i++) {
+    PEOPLE.push({ role: 'crate_carrier', route: campRoutes[i], shirt: i % 2 === 0 ? 0x9e4b3c : 0xd2c4a8, pants: 0x3c4a5e, hat: 0x6a523c, phase: i * 1.25 });
+  }
+
+  PEOPLE.push({ role: 'blacksmith', x: 1.4, y: 6.5, z: 35.8, yaw: -Math.PI * 0.65, shirt: 0x483832, pants: 0x2c2828, hat: 0x282424, phase: 0.4 });
+
+  const dressPalette = [0xd86868, 0x5888b8, 0xe4c464, 0x72a87c, 0xc87ca2, 0xdcccb2, 0x485e78, 0x8c5a44];
+  const parasolPalette = [0xf69eb4, 0xf8e08c, 0x8ec8ec, 0xe6d4f4, 0xf6b484];
+  for (let i = 0; i < 20; i++) {
+    const isLady = i % 2 === 0;
+    const hasParasol = isLady && i < 10;
+    let action;
+    if (hasParasol) action = i % 4 === 0 ? 'parasol_stroll' : 'parasol_admire';
+    else if (i % 3 === 0) action = 'point';
+    else if (i % 3 === 1) action = 'wave';
+    else action = 'stroll';
+
+    const tx = 20.8 + (i % 6) * 2.75 + (rng() - 0.5) * 0.8;
+    const tz = 25.4 + Math.floor(i / 6) * 2.6 + (rng() - 0.5) * 0.8;
+    const faceYaw = Math.atan2(-1.0 - tx, 6.0 - tz);
+    PEOPLE.push({
+      role: action, x: tx, y: 8.5, z: tz, yaw: faceYaw + (rng() - 0.5) * 0.25,
+      isLady, shirt: dressPalette[i % dressPalette.length], pants: isLady ? dressPalette[i % dressPalette.length] : 0x3b3836,
+      hat: isLady ? 0xf2e4c6 : 0x564638, parasolCol: hasParasol ? parasolPalette[(i / 2) % parasolPalette.length] : 0, phase: i * 0.83,
+    });
+  }
+}
+
+const MAX_PERSON_PARTS = 720;
+const peopleIM = new THREE.InstancedMesh(unitBoxGeo, coarseVoxelMat, MAX_PERSON_PARTS);
+peopleIM.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+for (let i = 0; i < MAX_PERSON_PARTS; i++) peopleIM.setColorAt(i, new THREE.Color(0xffffff));
+scene.add(peopleIM);
+
+const NUM_BIRDS = 12;
+const birdsIM = new THREE.InstancedMesh(unitBoxGeo, coarseVoxelMat, NUM_BIRDS * 3);
+birdsIM.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+for (let i = 0; i < NUM_BIRDS * 3; i++) birdsIM.setColorAt(i, new THREE.Color(i % 3 === 0 ? 0x382a22 : 0x503e32));
+birdsIM.instanceColor.needsUpdate = true;
+scene.add(birdsIM);
+
+const MAX_SOLID_PARTICLES = 560;
+const solidParticleMat = createVoxelMaterial({ roughness: 0.9, metalness: 0.0, bevelStrength: 0.35 });
+const solidParticlesIM = new THREE.InstancedMesh(unitBoxGeo, solidParticleMat, MAX_SOLID_PARTICLES);
+solidParticlesIM.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+for (let i = 0; i < MAX_SOLID_PARTICLES; i++) solidParticlesIM.setColorAt(i, new THREE.Color(0xffffff));
+scene.add(solidParticlesIM);
+
+const MAX_MIST_PARTICLES = 240;
+const mistMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  roughness: 0.85,
+  metalness: 0.0,
+  transparent: true,
+  opacity: 0.64,
+  depthWrite: false,
+});
+const mistParticlesIM = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mistMat, MAX_MIST_PARTICLES);
+mistParticlesIM.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+for (let i = 0; i < MAX_MIST_PARTICLES; i++) mistParticlesIM.setColorAt(i, new THREE.Color(0xffffff));
+scene.add(mistParticlesIM);
+
+const BLAST_PERIOD = 3.8;
+const BLAST_SITES = [
+  new THREE.Vector3(25.0, 24.8, 10.2), // Unfinished right granite shoulder beside Lincoln
+  new THREE.Vector3(-0.8, 22.2, 10.4), // Unfinished lower cleft block between Jefferson & Roosevelt
+];
+const blastChipSeeds = [];
+const blastDustSeeds = [];
+{
+  const rng = mulberry32(19391031);
+  for (let i = 0; i < 42; i++) {
+    const theta = (rng() - 0.5) * Math.PI * 0.85;
+    const elev = 0.25 + rng() * 0.85;
+    const spd = 7.5 + rng() * 11.5;
+    blastChipSeeds.push({
+      vx: Math.sin(theta) * spd, vy: Math.sin(elev) * spd, vz: (0.45 + Math.cos(theta) * 0.65) * spd,
+      rx: rng() * 9, ry: rng() * 9, rz: rng() * 9, sz: 0.24 + rng() * 0.34, shade: 0.74 + rng() * 0.22,
+    });
+  }
+  for (let i = 0; i < 56; i++) {
+    const theta = rng() * Math.PI * 2;
+    const phi = (rng() - 0.3) * Math.PI * 0.7;
+    const spd = 2.2 + rng() * 6.8;
+    blastDustSeeds.push({
+      vx: Math.cos(theta) * Math.cos(phi) * spd, vy: Math.sin(phi) * spd + 2.2, vz: (Math.abs(Math.sin(theta)) * 0.75 + 0.3) * spd,
+      sz: 0.55 + rng() * 0.95, life: 1.4 + rng() * 1.3, shade: 0.82 + rng() * 0.16,
+    });
+  }
+}
+
+// Bake static shadow map ONCE!
+renderer.shadowMap.needsUpdate = true;
+
+// ============================================================================
+// 14. DETERMINISTIC ANIMATION UPDATE & CAMERA TURNTABLE ORBIT (window.renderAt)
+// ============================================================================
+const _dummy = new THREE.Object3D();
+const _col = new THREE.Color();
+const _vA = new THREE.Vector3();
+const _vB = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
+const _quat = new THREE.Quaternion();
+
+function setPart(im, idx, px, py, pz, rx, ry, rz, sx, sy, sz, hex) {
+  _dummy.position.set(px, py, pz);
+  _dummy.rotation.set(rx, ry, rz);
+  _dummy.scale.set(sx, sy, sz);
+  _dummy.updateMatrix();
+  im.setMatrixAt(idx, _dummy.matrix);
+  _col.setHex(hex);
+  im.setColorAt(idx, _col);
+}
+
+function hideInstance(im, idx) {
+  _dummy.position.set(0, -9999, 0);
+  _dummy.scale.set(0.0001, 0.0001, 0.0001);
+  _dummy.updateMatrix();
+  im.setMatrixAt(idx, _dummy.matrix);
+}
+
+function updateSceneAtTime(t) {
+  skyMat.uniforms.uTime.value = t;
+
+  for (let i = 0; i < floatingIslets.length; i++) {
+    const isl = floatingIslets[i];
+    isl.grp.position.set(
+      isl.baseX + Math.sin(t * 0.35 + isl.phase) * 0.85,
+      isl.baseY + Math.sin(t * 0.85 + isl.phase) * 0.75,
+      isl.baseZ + Math.cos(t * 0.30 + isl.phase) * 0.65
+    );
+  }
+  for (let i = 0; i < voxelClouds.length; i++) {
+    const cl = voxelClouds[i];
+    const isPlay = (typeof gameState !== 'undefined' && gameState.mode === 'play');
+    cl.grp.position.x = cl.baseX + (isPlay ? Math.sin(t * 0.16 + i) * 3.4 : (Math.sin(t * 0.18 + i) * 1.2 + (t - 6.0) * cl.speed));
+    cl.grp.position.y = cl.baseY + Math.sin(t * 0.5 + i * 1.7) * 0.35;
+  }
+
+  const flicker = 0.78 + 0.15 * Math.sin(t * 14.3) + 0.11 * Math.sin(t * 27.7 + 1.1) + 0.08 * Math.cos(t * 8.9);
+  forgeLight.intensity = 36.0 * flicker;
+  glowForgeMat.emissiveIntensity = 3.6 * flicker;
+
+  const flagIM = window.__flagIM;
+  for (let i = 0; i < flagColumns.length; i++) {
+    const fc = flagColumns[i];
+    const waveZ = Math.sin(fc.col * 0.48 - t * 6.8) * (fc.col * 0.042);
+    const waveY = Math.cos(fc.col * 0.35 - t * 5.2) * (fc.col * 0.014);
+    _dummy.position.set(fc.poleX + (fc.col + 0.5) * fc.s, fc.poleY + (fc.row + 0.5) * fc.s + waveY, fc.poleZ + waveZ);
+    _dummy.rotation.set(0, Math.cos(fc.col * 0.48 - t * 6.8) * 0.16, 0);
+    _dummy.scale.set(fc.s * 1.04, fc.s * 1.04, fc.s * 0.55);
+    _dummy.updateMatrix();
+    flagIM.setMatrixAt(fc.idx, _dummy.matrix);
+  }
+  flagIM.instanceMatrix.needsUpdate = true;
+
+  // Aerial Tramway Car climbs smoothly to summit and comes back down!
+  const cyclePhase = (t / DURATION) * Math.PI * 2.0;
+  const tramU = clamp(0.52 - 0.44 * Math.cos(cyclePhase * 0.92 + 0.25), 0.06, 0.96);
+  tramCarGroup.position.copy(evalTramCablePos(tramU, 0));
+  tramCarGroup.rotation.z = Math.sin(t * 2.6) * 0.055;
+  tramCarGroup.rotation.x = Math.cos(t * 2.1) * 0.045;
+
+  for (let i = 0; i < movingTrucks.length; i++) {
+    const tr = movingTrucks[i];
+    const rawU = (tr.baseU + t * tr.speed) % 1.68;
+    const u = rawU <= 0.84 ? (0.06 + rawU) : (0.90 - (rawU - 0.84));
+    const uClamped = clamp(u, 0.04, 0.94);
+    const dirSign = rawU <= 0.84 ? 1 : -1;
+    const pos = roadCurve.getPoint(uClamped);
+    const target = roadCurve.getPoint(clamp(uClamped + dirSign * 0.015, 0.01, 0.99));
+    tr.grp.position.set(pos.x, pos.y + 0.18 + Math.abs(Math.sin(t * 16 + i)) * 0.04, pos.z);
+    tr.grp.lookAt(target.x, target.y + 0.18, target.z);
+  }
+
+  for (let i = 0; i < NUM_BIRDS; i++) {
+    const ang = t * (0.48 + (i % 3) * 0.08) + i * ((Math.PI * 2) / NUM_BIRDS);
+    const rad = 18.0 + (i % 4) * 5.2 + Math.sin(t * 0.7 + i) * 2.2;
+    const bx = -1.0 + Math.cos(ang) * rad;
+    const bz = -3.0 + Math.sin(ang) * (rad * 0.72);
+    const by = 45.0 + (i % 3) * 2.0 + Math.sin(ang * 2.0 + i) * 1.3;
+    const heading = -ang + Math.PI * 0.5;
+    const flap = Math.sin(t * 7.5 + i * 2.1) * 0.48;
+
+    const baseIdx = i * 3;
+    setPart(birdsIM, baseIdx, bx, by, bz, 0, heading, 0.18, 0.28, 0.18, 0.65, 0x382a22);
+    const cosH = Math.cos(heading), sinH = Math.sin(heading);
+    setPart(birdsIM, baseIdx + 1, bx - cosH * 0.46, by + Math.sin(flap) * 0.18, bz + sinH * 0.46, 0, heading, flap + 0.18, 0.68, 0.09, 0.34, 0x503e32);
+    setPart(birdsIM, baseIdx + 2, bx + cosH * 0.46, by + Math.sin(flap) * 0.18, bz - sinH * 0.46, 0, heading, -flap + 0.18, 0.68, 0.09, 0.34, 0x503e32);
+  }
+  birdsIM.instanceMatrix.needsUpdate = true;
+
+  let pIdx = 0;
+  const skinHex = 0xf0c29c;
+
+  for (let i = 0; i < PEOPLE.length; i++) {
+    const p = PEOPLE[i];
+    if (p.role === 'carver') {
+      const cv = CARVERS[p.carverIdx];
+      const swingX = Math.sin(t * cv.freq + cv.phase) * cv.swing;
+      const swingZ = Math.cos(t * cv.freq * 0.8 + cv.phase) * 0.12;
+      const drillActive = Math.sin(t * 2.2 + cv.phase * 1.7) > -0.35;
+      const buzz = drillActive ? Math.sin(t * 48.0 + i) * 0.045 : 0.0;
+
+      const cx = cv.base[0] + swingX + buzz;
+      const cy = cv.base[1] + Math.abs(swingX) * 0.08;
+      const cz = cv.base[2] + swingZ;
+
+      _vA.set(cv.anchor[0], cv.anchor[1], cv.anchor[2]);
+      _vB.set(cx, cy + 0.65, cz);
+      const cableMesh = bosunCableMeshes[p.carverIdx];
+      cableMesh.position.lerpVectors(_vA, _vB, 0.5);
+      cableMesh.scale.set(1, _vA.distanceTo(_vB), 1);
+      _quat.setFromUnitVectors(_up, _vB.clone().sub(_vA).normalize());
+      cableMesh.quaternion.copy(_quat);
+
+      setPart(peopleIM, pIdx++, cx, cy - 0.18, cz, 0, 0, 0, 0.62, 0.12, 0.46, 0x9c6e44);
+      setPart(peopleIM, pIdx++, cx - 0.13, cy - 0.08, cz - 0.22, 0, 0, 0, 0.18, 0.20, 0.42, p.pants);
+      setPart(peopleIM, pIdx++, cx + 0.13, cy - 0.08, cz - 0.22, 0, 0, 0, 0.18, 0.20, 0.42, p.pants);
+      setPart(peopleIM, pIdx++, cx, cy + 0.24, cz, 0.12, 0, 0, 0.42, 0.48, 0.28, p.shirt);
+      setPart(peopleIM, pIdx++, cx, cy + 0.62, cz - 0.04, 0, 0, 0, 0.30, 0.30, 0.30, skinHex);
+      setPart(peopleIM, pIdx++, cx, cy + 0.80, cz - 0.04, 0, 0, 0, 0.38, 0.14, 0.38, p.hat);
+      setPart(peopleIM, pIdx++, cx - 0.24, cy + 0.26, cz - 0.24, 0.2, 0, 0, 0.15, 0.16, 0.44, p.shirt);
+      setPart(peopleIM, pIdx++, cx + 0.24, cy + 0.26, cz - 0.24, 0.2, 0, 0, 0.15, 0.16, 0.44, p.shirt);
+      setPart(peopleIM, pIdx++, cx, cy + 0.22, cz - 0.48 + buzz, 0, 0, 0, 0.20, 0.22, 0.42, 0x484e56);
+      setPart(peopleIM, pIdx++, cx, cy + 0.22, cz - 0.82 + buzz, 0, 0, 0, 0.08, 0.08, 0.48, 0xb8c0c8);
+      continue;
+    }
+
+    let px = p.x, py = p.y, pz = p.z, yaw = p.yaw || 0;
+    let stride = 0, armL = 0, armR = 0;
+
+    if (p.role === 'wheelbarrow') {
+      const spanA = -11.5 + p.slot * 5.4;
+      const spanB = spanA + 4.5;
+      const pingPong = 0.5 - 0.5 * Math.cos(t * 0.95 + p.phase);
+      px = mix(spanA, spanB, pingPong);
+      pz = 24.3 - Math.abs(px) * 0.20;
+      const mIdx = (Math.round(pz) - GZ0) * NX + (Math.round(px) - GX0);
+      py = (inCoarse(Math.round(px), 10, Math.round(pz)) ? surfaceTopMap[mIdx] : 11) + 0.5;
+      const dir = Math.sin(t * 0.95 + p.phase) >= 0 ? 1 : -1;
+      yaw = dir > 0 ? Math.PI * 0.5 : -Math.PI * 0.5;
+      stride = Math.sin(t * 6.5 + p.phase) * 0.55;
+      armL = -0.75; armR = -0.75;
+
+      const fwdX = Math.sin(yaw), fwdZ = Math.cos(yaw);
+      const wbx = px + fwdX * 0.95, wbz = pz + fwdZ * 0.95;
+      setPart(peopleIM, pIdx++, wbx, py + 0.36, wbz, 0, yaw, 0, 0.62, 0.34, 0.78, 0x7c4a32);
+      setPart(peopleIM, pIdx++, wbx, py + 0.58, wbz, 0, yaw, 0, 0.48, 0.24, 0.56, 0xc8c6c2);
+      setPart(peopleIM, pIdx++, wbx + fwdX * 0.44, py + 0.18, wbz + fwdZ * 0.44, t * 5.0 * dir, yaw, 0, 0.16, 0.34, 0.34, 0x2e3034);
+    }
+    else if (p.role === 'crate_carrier') {
+      const r = p.route;
+      const pingPong = 0.5 - 0.5 * Math.cos(t * 0.85 + p.phase);
+      px = mix(r.ax, r.bx, pingPong);
+      pz = mix(r.az, r.bz, pingPong);
+      py = r.y + 0.5;
+      const dir = Math.sin(t * 0.85 + p.phase) >= 0 ? 1 : -1;
+      yaw = Math.atan2((r.bx - r.ax) * dir, (r.bz - r.az) * dir);
+      stride = Math.sin(t * 6.2 + p.phase) * 0.52;
+      armL = -0.95; armR = -0.95;
+      const fwdX = Math.sin(yaw), fwdZ = Math.cos(yaw);
+      setPart(peopleIM, pIdx++, px + fwdX * 0.44, py + 0.82, pz + fwdZ * 0.44, 0, yaw, 0, 0.46, 0.38, 0.42, 0xc99c5e);
+    }
+    else if (p.role === 'ledge_hammer' || p.role === 'blacksmith') {
+      const swing = Math.sin(t * (p.role === 'blacksmith' ? 6.8 : 5.6) + p.phase);
+      armR = -1.35 + swing * 0.85; armL = -0.45;
+      const fwdX = Math.sin(yaw), fwdZ = Math.cos(yaw);
+      setPart(peopleIM, pIdx++, px + fwdX * 0.52, py + 0.95 - swing * 0.32, pz + fwdZ * 0.52, armR, yaw, 0, 0.14, 0.16, 0.56, 0x565a62);
+    }
+    else if (p.role === 'ledge_drill') {
+      px += Math.sin(t * 44.0 + p.phase) * 0.04;
+      armL = -0.85; armR = -0.85;
+      const fwdX = Math.sin(yaw), fwdZ = Math.cos(yaw);
+      setPart(peopleIM, pIdx++, px + fwdX * 0.46, py + 0.65, pz + fwdZ * 0.46, 0.3, yaw, 0, 0.20, 0.42, 0.22, 0x484e56);
+    }
+    else if (p.role === 'point') {
+      armR = -1.95 + Math.sin(t * 2.1 + p.phase) * 0.14;
+      armL = Math.sin(t * 1.4 + p.phase) * 0.12;
+    }
+    else if (p.role === 'wave') {
+      armR = -2.45 + Math.sin(t * 7.2 + p.phase) * 0.38;
+      armL = 0.15;
+    }
+    else if (p.role === 'stroll' || p.role === 'parasol_stroll') {
+      const walkOff = Math.sin(t * 0.72 + p.phase) * 1.45;
+      const dir = Math.cos(t * 0.72 + p.phase) >= 0 ? 1 : -1;
+      px += Math.cos(p.yaw) * walkOff;
+      pz -= Math.sin(p.yaw) * walkOff * 0.4;
+      yaw = p.yaw + (dir < 0 ? Math.PI * 0.35 : 0);
+      stride = Math.sin(t * 5.2 + p.phase) * 0.42;
+      armL = -stride * 0.7;
+      armR = p.parasolCol ? -1.15 : stride * 0.7;
+    }
+    else if (p.role === 'parasol_admire') {
+      yaw = p.yaw + Math.sin(t * 0.8 + p.phase) * 0.22;
+      armR = -1.15;
+      armL = -1.75 + Math.sin(t * 1.9 + p.phase) * 0.12;
+    }
+
+    const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+    if (p.isLady) {
+      setPart(peopleIM, pIdx++, px, py + 0.32, pz, stride * 0.15, yaw, 0, 0.44, 0.52, 0.34, p.pants);
+      setPart(peopleIM, pIdx++, px - cosY * 0.10, py + 0.08, pz + sinY * 0.10, stride, yaw, 0, 0.14, 0.22, 0.16, skinHex);
+      setPart(peopleIM, pIdx++, px + cosY * 0.10, py + 0.08, pz - sinY * 0.10, -stride, yaw, 0, 0.14, 0.22, 0.16, skinHex);
+    } else {
+      setPart(peopleIM, pIdx++, px - cosY * 0.11, py + 0.24, pz + sinY * 0.11, stride, yaw, 0, 0.17, 0.48, 0.18, p.pants);
+      setPart(peopleIM, pIdx++, px + cosY * 0.11, py + 0.24, pz - sinY * 0.11, -stride, yaw, 0, 0.17, 0.48, 0.18, p.pants);
+    }
+    setPart(peopleIM, pIdx++, px, py + 0.72, pz, 0, yaw, 0, 0.40, 0.48, 0.26, p.shirt);
+    setPart(peopleIM, pIdx++, px, py + 1.12, pz, 0, yaw, 0, 0.28, 0.28, 0.28, skinHex);
+    setPart(peopleIM, pIdx++, px, py + 1.30, pz, 0, yaw, 0, p.isLady ? 0.44 : 0.38, 0.12, p.isLady ? 0.44 : 0.38, p.hat);
+
+    const lx = px - cosY * 0.27, lz = pz + sinY * 0.27;
+    const rx = px + cosY * 0.27, rz = pz - sinY * 0.27;
+    const lFwd = -Math.sin(armL) * 0.18, lUp = (1.0 - Math.cos(armL)) * 0.18;
+    const rFwd = -Math.sin(armR) * 0.18, rUp = (1.0 - Math.cos(armR)) * 0.18;
+    setPart(peopleIM, pIdx++, lx + sinY * lFwd, py + 0.72 + lUp, lz + cosY * lFwd, armL, yaw, 0, 0.14, 0.42, 0.14, p.shirt);
+    setPart(peopleIM, pIdx++, rx + sinY * rFwd, py + 0.72 + rUp, rz + cosY * rFwd, armR, yaw, 0, 0.14, 0.42, 0.14, p.shirt);
+
+    if (p.parasolCol) {
+      const tilt = 0.18 + Math.sin(t * 1.6 + p.phase) * 0.06;
+      const paraX = rx + cosY * 0.08, paraZ = rz - sinY * 0.08;
+      const spin = t * 0.9 + p.phase;
+      setPart(peopleIM, pIdx++, paraX, py + 1.34, paraZ, -tilt, yaw, 0, 0.07, 0.95, 0.07, 0x8c623c);
+      setPart(peopleIM, pIdx++, paraX, py + 1.78, paraZ - tilt * 0.35, -tilt, spin, 0, 1.12, 0.14, 1.12, p.parasolCol);
+      setPart(peopleIM, pIdx++, paraX, py + 1.90, paraZ - tilt * 0.38, -tilt, spin + 0.4, 0, 0.66, 0.14, 0.66, 0xfaf6ee);
+    }
+  }
+  for (let rest = pIdx; rest < MAX_PERSON_PARTS; rest++) hideInstance(peopleIM, rest);
+  peopleIM.instanceMatrix.needsUpdate = true;
+  peopleIM.instanceColor.needsUpdate = true;
+
+  // Particles
+  let sIdx = 0;
+  let mIdx = 0;
+
+  for (let i = 0; i < CARVERS.length; i++) {
+    const cv = CARVERS[i];
+    if (Math.sin(t * 2.2 + cv.phase * 1.7) <= -0.35) continue;
+    const cx = cv.base[0] + Math.sin(t * cv.freq + cv.phase) * cv.swing;
+    const cy = cv.base[1] + 0.22;
+    const cz = cv.base[2] - 0.85;
+    for (let k = 0; k < 8; k++) {
+      const age = (t * 1.9 + i * 0.37 + k / 8.0) % 1.0;
+      const sz = (0.16 + age * 0.46) * (1.0 - age * 0.72);
+      setPart(solidParticlesIM, sIdx++, cx + Math.sin(i * 5 + k * 2.3) * age * 0.85, cy - age * age * 1.25 + age * 0.25, cz + 0.25 + age * 1.15, age * 2, age * 3, 0, sz, sz, sz, 0xe4e0d8);
+    }
+  }
+  for (const gx of [-7.5, 2.0, 10.5]) {
+    const gz = gx === 2.0 ? 9.6 : 11.6;
+    for (let k = 0; k < 5; k++) {
+      const age = (t * 1.7 + gx * 0.2 + k / 5.0) % 1.0;
+      const sz = (0.18 + age * 0.45) * (1.0 - age * 0.7);
+      setPart(solidParticlesIM, sIdx++, gx + Math.sin(k * 3.1) * age * 0.7, 21.0 + age * 0.4 - age * age * 0.8, gz + age * 0.9, age, age * 2, 0, sz, sz, sz, 0xdfdbd2);
+    }
+  }
+
+  // Dynamite Blast every 3.8s!
+  const blastShifted = t + 2.7;
+  const blastIndex = Math.floor(blastShifted / BLAST_PERIOD);
+  const tau = blastShifted - blastIndex * BLAST_PERIOD;
+  const bSite = BLAST_SITES[Math.abs(blastIndex) % BLAST_SITES.length];
+
+  if (tau >= 0.0 && tau < 0.22) {
+    const flash = 1.0 - tau / 0.22;
+    blastLight.position.copy(bSite).add(new THREE.Vector3(0, 0.5, 1.5));
+    blastLight.intensity = flash * flash * 85.0;
+    const fSz = 0.8 + tau * 9.5;
+    setPart(mistParticlesIM, mIdx++, bSite.x, bSite.y, bSite.z + 0.6, tau * 5, tau * 7, 0, fSz, fSz, fSz, 0xffd27a);
+  } else {
+    blastLight.intensity = 0.0;
+  }
+
+  if (tau >= 0.0 && tau < 3.1) {
+    for (let i = 0; i < blastChipSeeds.length && sIdx < MAX_SOLID_PARTICLES - 80; i++) {
+      const ch = blastChipSeeds[i];
+      if (tau > 2.55) continue;
+      const px = bSite.x + ch.vx * tau;
+      const py = bSite.y + ch.vy * tau - 0.5 * 14.5 * tau * tau;
+      const pz = bSite.z + ch.vz * tau;
+      if (py < 7.0) continue;
+      const sz = ch.sz * (1.0 - smoothstep(2.0, 2.55, tau));
+      const gVal = Math.round(212 * ch.shade);
+      setPart(solidParticlesIM, sIdx++, px, py, pz, ch.rx * tau, ch.ry * tau, ch.rz * tau, sz, sz * 0.8, sz * 1.1, (gVal << 16) | ((gVal - 3) << 8) | (gVal - 8));
+    }
+    for (let i = 0; i < blastDustSeeds.length && sIdx < MAX_SOLID_PARTICLES - 30; i++) {
+      const ds = blastDustSeeds[i];
+      if (tau > ds.life) continue;
+      const prog = tau / ds.life;
+      const drag = (1.0 - Math.exp(-tau * 2.4)) / 2.4;
+      const px = bSite.x + ds.vx * drag * 2.2 + tau * 0.6;
+      const py = bSite.y + ds.vy * drag * 1.8 + tau * 0.85;
+      const pz = bSite.z + ds.vz * drag * 2.2;
+      const sz = ds.sz * (0.35 + prog * 1.65) * (1.0 - Math.pow(prog, 2.2));
+      const gVal = Math.round(226 * ds.shade);
+      setPart(solidParticlesIM, sIdx++, px, py, pz, tau * 0.8, tau * 1.1, 0, sz, sz, sz, (gVal << 16) | ((gVal - 5) << 8) | (gVal - 12));
+    }
+  }
+
+  // Red Compressor House Chimney Smoke (-14, 18.6, 32) — drifts gently westward so Washington's face stays 100% clear!
+  for (let i = 0; i < 34 && sIdx < MAX_SOLID_PARTICLES - 20; i++) {
+    const age = (t * 0.42 + i / 34.0) % 1.0;
+    const sx = -14.0 - age * 4.2 + Math.sin(age * 6.5 + i) * 0.50;
+    const sy = 18.6 + age * 9.5;
+    const szPos = 32.0 + age * 1.2 + Math.cos(age * 5.2 + i) * 0.45;
+    const scale = (0.38 + age * 1.40) * (1.0 - Math.pow(age, 2.4));
+    const shade = Math.round(mix(148, 224, age));
+    setPart(solidParticlesIM, sIdx++, sx, sy, szPos, age * 1.5, age * 2.1, 0, scale, scale, scale, (shade << 16) | (shade << 8) | (shade + 4));
+  }
+
+  for (let i = 0; i < movingTrucks.length; i++) {
+    const tr = movingTrucks[i].grp.position;
+    for (let k = 0; k < 5 && sIdx < MAX_SOLID_PARTICLES; k++) {
+      const age = (t * 1.8 + i * 0.4 + k / 5.0) % 1.0;
+      const sz = (0.22 + age * 0.55) * (1.0 - age);
+      setPart(solidParticlesIM, sIdx++, tr.x + Math.sin(k * 2.4) * 0.5, tr.y + 0.25 + age * 0.65, tr.z + Math.cos(k * 2.4) * 0.5, age, age, 0, sz, sz, sz, 0xcab08a);
+    }
+  }
+
+  // Waterfall Droplets & Mist Clouds
+  for (let i = 0; i < 110 && mIdx < MAX_MIST_PARTICLES - 30; i++) {
+    const age = (t * 0.68 + i / 110.0) % 1.0;
+    const lane = ((i * 17) % 100) / 100.0 - 0.5;
+    const wx = -34.0 + lane * (3.6 + age * 2.4) + Math.sin(age * 9.0 + i) * 0.35;
+    const wy = 3.8 - age * age * 19.2;
+    const wz = 50.8 + Math.min(3.4, age * 4.0) + Math.cos(i * 2.3) * 0.45;
+    const sz = 0.28 + age * 0.52;
+    setPart(mistParticlesIM, mIdx++, wx, wy, wz, age * 4, age * 3, 0, sz, sz * 1.5, sz, 0xd8f0fc);
+  }
+  for (let i = 0; i < 65 && mIdx < MAX_MIST_PARTICLES - 22; i++) {
+    const age = (t * 0.36 + i / 65.0) % 1.0;
+    const ang = i * 2.399;
+    const rad = (0.8 + (i % 5) * 0.52) * (0.5 + age * 1.7);
+    const mx = -34.0 + Math.cos(ang) * rad;
+    const my = -13.0 + Math.sin(i * 1.7) * 2.2 + age * 3.4;
+    const mz = 53.2 + Math.sin(ang) * rad * 0.8 + age * 1.4;
+    const sz = (0.82 + age * 1.95) * Math.sin(age * Math.PI);
+    setPart(mistParticlesIM, mIdx++, mx, my, mz, age, age * 1.3, 0, sz, sz * 0.85, sz, 0xeef8ff);
+  }
+
+  // Forge Sparks
+  for (let i = 0; i < 18 && mIdx < MAX_MIST_PARTICLES; i++) {
+    const age = (t * 1.15 + i / 18.0) % 1.0;
+    const sx = -1.4 + Math.sin(age * 8.0 + i * 2.1) * 0.55;
+    const sy = 8.3 + age * 3.8;
+    const szPos = 34.5 + Math.cos(age * 7.0 + i * 1.7) * 0.55;
+    const sz = 0.14 * (1.0 - age * 0.8);
+    setPart(mistParticlesIM, mIdx++, sx, sy, szPos, 0, 0, 0, sz, sz, sz, i % 2 === 0 ? 0xffb830 : 0xff6a12);
+  }
+
+  // Dynamic Player Demolition Particles & Thrown Dynamite Sticks
+  if (typeof updateInteractiveParticles === 'function') {
+    const counts = updateInteractiveParticles(t, sIdx, mIdx);
+    sIdx = counts.sIdx;
+    mIdx = counts.mIdx;
+  }
+
+  for (let r = sIdx; r < MAX_SOLID_PARTICLES; r++) hideInstance(solidParticlesIM, r);
+  for (let r = mIdx; r < MAX_MIST_PARTICLES; r++) hideInstance(mistParticlesIM, r);
+  solidParticlesIM.instanceMatrix.needsUpdate = true;
+  solidParticlesIM.instanceColor.needsUpdate = true;
+  mistParticlesIM.instanceMatrix.needsUpdate = true;
+  mistParticlesIM.instanceColor.needsUpdate = true;
+
+  // CAMERA: Showcase Panoramic Orbit vs. Interactive Player Camera
+  if (CLOSEUP_MODE) {
+    if (CLOSEUP_FACE === 'washington') {
+      camera.position.set(-19.8, 29.8, 32.0);
+      camera.lookAt(-19.8, 29.0, 9.8);
+    } else if (CLOSEUP_FACE === 'jefferson') {
+      camera.position.set(-10.5, 31.0, 28.0);
+      camera.lookAt(-6.6, 30.0, 6.8);
+    } else if (CLOSEUP_FACE === 'roosevelt') {
+      camera.position.set(4.5, 28.5, 25.5);
+      camera.lookAt(5.0, 28.2, 3.1);
+    } else if (CLOSEUP_FACE === 'lincoln') {
+      camera.position.set(14.0, 29.5, 30.0);
+      camera.lookAt(17.8, 28.6, 8.5);
+    } else {
+      camera.position.set(-0.8, 29.0, 62.0);
+      camera.lookAt(-0.8, 28.0, 6.5);
+    }
+  } else if (typeof gameState !== 'undefined' && gameState.mode === 'play' && !manualCaptureMode) {
+    updatePlayerCamera(t);
+  } else {
+    const uNorm = clamp((t % DURATION) / DURATION, 0.0, 1.0);
+    const orbitProgress = mix(uNorm, smootherstep(0.0, 1.0, uNorm), 0.26);
+    const startAngle = (-52.0 * Math.PI) / 180.0;
+    const endAngle   = ( 48.0 * Math.PI) / 180.0; // 100.0° continuous showcase orbit!
+    const userYaw = (typeof showcaseDrag !== 'undefined') ? showcaseDrag.yawOffset : 0.0;
+    const userPitch = (typeof showcaseDrag !== 'undefined') ? showcaseDrag.pitchOffset : 0.0;
+    const userZoom = (typeof showcaseDrag !== 'undefined') ? showcaseDrag.zoomOffset : 0.0;
+    const theta = mix(startAngle, endAngle, orbitProgress) + userYaw;
+
+    const zoomEase = smootherstep(0.0, 1.0, uNorm);
+    const radius = clamp(mix(196.0, 172.0, zoomEase) + userZoom, 55.0, 260.0);
+    const camElev = clamp(mix(31.5, 27.8, zoomEase) + userPitch * 45.0, -15.0, 95.0);
+
+    const pivotX = -0.8;
+    const pivotZ = 6.0;
+    const lookY  = mix(11.4, 12.6, zoomEase);
+
+    camera.position.set(
+      pivotX + Math.sin(theta) * radius,
+      camElev,
+      pivotZ + Math.cos(theta) * radius
+    );
+    camera.lookAt(pivotX, lookY, pivotZ);
+  }
+}
+
+// ============================================================================
+// 15. INTERACTIVE MINECRAFT / ROBLOX ENGINE (PC + MOBILE TOUCH, PHYSICS, MINING, DYNAMITE)
+// ============================================================================
+const HOTBAR_ITEMS = [
+  { id: 'pickaxe',  name: 'Pico',     icon: '⛏️', type: 'tool',     color: 0x9aa4b0 },
+  { id: 'granite',  name: 'Granito',  icon: '🪨', type: 'block',    color: 0xa89480, packed: packColor(168, 148, 128, 2) },
+  { id: 'grass',    name: 'Pasto',    icon: '🌿', type: 'block',    color: 0x5c8a3c, packed: packColor(92, 138, 60, 2) },
+  { id: 'wood',     name: 'Madera',   icon: '🪵', type: 'block',    color: 0xa87e52, packed: packColor(168, 126, 82, 2) },
+  { id: 'pine',     name: 'Pino',     icon: '🌲', type: 'block',    color: 0x2c6038, packed: packColor(44, 96, 56, 2) },
+  { id: 'brick',    name: 'Ladrillo', icon: '🧱', type: 'block',    color: 0xb83228, packed: packColor(184, 50, 40, 2) },
+  { id: 'water',    name: 'Agua',     icon: '💧', type: 'water',    color: 0x2c94d4, packed: packColor(44, 148, 212, 1) },
+  { id: 'dynamite', name: 'Dinamita', icon: '🧨', type: 'dynamite', color: 0xd82c20 },
+];
+
+const TELEPORT_SPOTS = [
+  { name: 'Campamento 🇸🇻', pos: new THREE.Vector3(1.5, 6.2, 44.5),   yaw: 0.0,           pitch: 0.15, fly: false },
+  { name: 'Lago Azul 🌊',  pos: new THREE.Vector3(-28.0, 6.5, 21.5),  yaw: 1.45,          pitch: -0.05, fly: false },
+  { name: 'Las 4 Caras 🗿', pos: new THREE.Vector3(1.5, 20.5, 13.5),   yaw: 0.0,           pitch: 0.24, fly: false },
+  { name: 'Cima ⛰️',       pos: new THREE.Vector3(-1.0, 46.5, -4.0),  yaw: 0.0,           pitch: -0.15, fly: false },
+  { name: 'Nube Alta ☁️',  pos: new THREE.Vector3(-26.0, 51.5, -34.0), yaw: Math.PI,      pitch: -0.22, fly: true },
+  { name: 'Isla Flotante 🏝️', pos: new THREE.Vector3(-64.0, 13.5, 16.0), yaw: -1.35,     pitch: 0.08, fly: false },
+];
+
+const gameState = {
+  mode: 'showcase', // 'showcase' | 'play'
+  thirdPerson: true,
+  selectedSlot: 0,
+  teleportIdx: 0,
+  rideState: null, // null | { type: 'tram' } | { type: 'truck', index: 0..2 }
+  player: {
+    pos: new THREE.Vector3(1.5, 6.2, 44.5),
+    vel: new THREE.Vector3(0, 0, 0),
+    yaw: 0.0,
+    pitch: 0.15,
+    onGround: false,
+    inWater: false,
+    flying: false,
+    walkCycle: 0,
+    swingTimer: 0,
+    height: 1.42,
+    radius: 0.27,
+  },
+  keys: {},
+  joyVec: { x: 0, y: 0 },
+  jumpHeld: false,
+  flyDownHeld: false,
+  lastSpaceTime: 0,
+  targetVoxel: null,
+};
+
+const showcaseDrag = {
+  active: false,
+  lastX: 0,
+  lastY: 0,
+  yawOffset: 0,
+  pitchOffset: 0,
+  zoomOffset: 0,
+};
+
+// Toast Helper
+let toastTimeout = null;
+function showToast(msg, durationMs = 2400) {
+  const el = document.getElementById('toast-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.opacity = '1';
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => { el.style.opacity = '0'; }, durationMs);
+}
+
+// Build Player Avatar (Tiny Voxel Explorer with El Salvador Blue Shirt + Hat + Swinging Tool)
+const playerAvatarGroup = new THREE.Group();
+playerAvatarGroup.visible = false;
+scene.add(playerAvatarGroup);
+
+function makeAvatarPart(sx, sy, sz, hex, ox = 0, oy = 0, oz = 0) {
+  const pivot = new THREE.Group();
+  const mat = createVoxelMaterial({ roughness: 0.8, metalness: 0.05, bevelStrength: 0.45 });
+  const mesh = new THREE.Mesh(unitBoxGeo, mat);
+  const col = new THREE.Color(hex);
+  const cArr = mesh.geometry.attributes.color.array;
+  const gClone = unitBoxGeo.clone();
+  const cNew = new Float32Array(cArr.length);
+  for (let i = 0; i < cNew.length; i += 3) {
+    cNew[i] = col.r; cNew[i + 1] = col.g; cNew[i + 2] = col.b;
+  }
+  gClone.setAttribute('color', new THREE.BufferAttribute(cNew, 3));
+  mesh.geometry = gClone;
+  mesh.scale.set(sx, sy, sz);
+  mesh.position.set(ox, oy, oz);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  pivot.add(mesh);
+  return { pivot, mesh };
+}
+
+const avLegL  = makeAvatarPart(0.17, 0.48, 0.18, 0x3b4d68, 0, -0.24, 0);
+const avLegR  = makeAvatarPart(0.17, 0.48, 0.18, 0x3b4d68, 0, -0.24, 0);
+const avTorso = makeAvatarPart(0.40, 0.48, 0.26, 0x0f47af, 0, 0, 0); // Azul El Salvador
+const avStripe = makeAvatarPart(0.41, 0.14, 0.27, 0xf4f7fc, 0, 0, 0); // Franja Blanca
+avTorso.pivot.add(avStripe.pivot);
+const avHead  = makeAvatarPart(0.30, 0.30, 0.30, 0xf0c29c, 0, 0.15, 0);
+const avHatBrim = makeAvatarPart(0.42, 0.08, 0.42, 0xd4b475, 0, 0.31, 0);
+const avHatTop  = makeAvatarPart(0.28, 0.11, 0.28, 0xb89654, 0, 0.38, 0);
+avHead.pivot.add(avHatBrim.pivot, avHatTop.pivot);
+
+const avArmL  = makeAvatarPart(0.14, 0.44, 0.14, 0x0f47af, 0, -0.18, 0);
+const avArmR  = makeAvatarPart(0.14, 0.44, 0.14, 0x0f47af, 0, -0.18, 0);
+const avToolHandle = makeAvatarPart(0.06, 0.06, 0.42, 0x8b5a2b, 0, -0.34, 0.18);
+const avToolHead   = makeAvatarPart(0.26, 0.08, 0.08, 0x9aa4b0, 0, -0.34, 0.36);
+avArmR.pivot.add(avToolHandle.pivot, avToolHead.pivot);
+
+avLegL.pivot.position.set(-0.10, 0.48, 0);
+avLegR.pivot.position.set( 0.10, 0.48, 0);
+avTorso.pivot.position.set(0, 0.72, 0);
+avHead.pivot.position.set(0, 0.97, 0);
+avArmL.pivot.position.set(-0.27, 0.92, 0);
+avArmR.pivot.position.set( 0.27, 0.92, 0);
+playerAvatarGroup.add(avLegL.pivot, avLegR.pivot, avTorso.pivot, avHead.pivot, avArmL.pivot, avArmR.pivot);
+
+// First-person held item mesh attached to camera
+const fpHandGroup = new THREE.Group();
+const fpBlockMesh = makeAvatarPart(0.22, 0.22, 0.22, 0xa89480, 0, 0, 0);
+const fpPickShaft = makeAvatarPart(0.045, 0.36, 0.045, 0x8b5a2b, 0, 0, 0);
+const fpPickHead  = makeAvatarPart(0.24, 0.06, 0.06, 0xb8c4d0, 0, 0.16, 0);
+fpHandGroup.add(fpBlockMesh.pivot, fpPickShaft.pivot, fpPickHead.pivot);
+fpHandGroup.visible = false;
+scene.add(fpHandGroup);
+
+// Targeted Voxel Highlight Wireframe Box
+const voxelCursorGeo = new THREE.BoxGeometry(1.02, 1.02, 1.02);
+const voxelCursorMat = new THREE.MeshBasicMaterial({
+  color: 0xffe082,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.85,
+  depthTest: true,
+});
+const voxelCursorMesh = new THREE.Mesh(voxelCursorGeo, voxelCursorMat);
+voxelCursorMesh.visible = false;
+scene.add(voxelCursorMesh);
+
+// Dynamic Demolition Particles & Thrown Dynamite Sticks
+const activeDebris = [];
+const activeDynamites = [];
+let playerBlastFlash = 0.0;
+const playerBlastPos = new THREE.Vector3();
+
+function spawnBreakParticles(wx, wy, wz, hexColor, count = 18, speedScale = 1.0) {
+  for (let i = 0; i < count; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const elev = (Math.random() - 0.15) * Math.PI * 0.6;
+    const spd = (2.5 + Math.random() * 5.5) * speedScale;
+    activeDebris.push({
+      x: wx + (Math.random() - 0.5) * 0.4,
+      y: wy + (Math.random() - 0.5) * 0.4,
+      z: wz + (Math.random() - 0.5) * 0.4,
+      vx: Math.cos(ang) * Math.cos(elev) * spd,
+      vy: Math.sin(elev) * spd + 2.5 * speedScale,
+      vz: Math.sin(ang) * Math.cos(elev) * spd,
+      sz: 0.16 + Math.random() * 0.22,
+      color: hexColor,
+      age: 0,
+      maxAge: 0.75 + Math.random() * 0.65,
+    });
+  }
+}
+
+let lastParticleUpdateTime = 0;
+function updateInteractiveParticles(t, sIdx, mIdx) {
+  const dt = clamp(t - lastParticleUpdateTime, 0.001, 0.08);
+  lastParticleUpdateTime = t;
+
+  // Update thrown dynamite sticks
+  for (let i = activeDynamites.length - 1; i >= 0; i--) {
+    const dyn = activeDynamites[i];
+    dyn.age += dt;
+    dyn.vy -= 18.0 * dt;
+    const nx = dyn.x + dyn.vx * dt;
+    const ny = dyn.y + dyn.vy * dt;
+    const nz = dyn.z + dyn.vz * dt;
+    if (checkWorldSolid(nx, ny, nz).solid) {
+      dyn.vx *= 0.35;
+      dyn.vz *= 0.35;
+      dyn.vy = Math.abs(dyn.vy) * 0.28;
+    } else {
+      dyn.x = nx; dyn.y = ny; dyn.z = nz;
+    }
+
+    if (sIdx < MAX_SOLID_PARTICLES - 4) {
+      setPart(solidParticlesIM, sIdx++, dyn.x, dyn.y, dyn.z, dyn.age * 8, dyn.age * 5, 0, 0.22, 0.48, 0.22, 0xd8281c);
+    }
+    if (mIdx < MAX_MIST_PARTICLES - 4) {
+      const sparkSz = 0.18 + Math.sin(dyn.age * 40) * 0.06;
+      setPart(mistParticlesIM, mIdx++, dyn.x, dyn.y + 0.26, dyn.z, 0, 0, 0, sparkSz, sparkSz, sparkSz, 0xffe066);
+    }
+
+    if (dyn.age >= 1.55) {
+      detonateDynamiteAt(dyn.x, dyn.y, dyn.z);
+      activeDynamites.splice(i, 1);
+    }
+  }
+
+  if (playerBlastFlash > 0) {
+    playerBlastFlash = Math.max(0, playerBlastFlash - dt * 3.8);
+    blastLight.position.copy(playerBlastPos).add(new THREE.Vector3(0, 0.8, 0.8));
+    blastLight.intensity = Math.max(blastLight.intensity, playerBlastFlash * 110.0);
+    if (mIdx < MAX_MIST_PARTICLES - 2) {
+      const fSz = (1.0 - playerBlastFlash) * 7.5 + 1.0;
+      setPart(mistParticlesIM, mIdx++, playerBlastPos.x, playerBlastPos.y, playerBlastPos.z, 0, 0, 0, fSz, fSz, fSz, 0xffd27a);
+    }
+  }
+
+  for (let i = activeDebris.length - 1; i >= 0; i--) {
+    const d = activeDebris[i];
+    d.age += dt;
+    if (d.age >= d.maxAge) {
+      activeDebris.splice(i, 1);
+      continue;
+    }
+    d.vy -= 16.0 * dt;
+    d.x += d.vx * dt;
+    d.y += d.vy * dt;
+    d.z += d.vz * dt;
+    const scale = d.sz * (1.0 - d.age / d.maxAge);
+    if (sIdx < MAX_SOLID_PARTICLES - 2) {
+      setPart(solidParticlesIM, sIdx++, d.x, d.y, d.z, d.age * 6, d.age * 9, 0, scale, scale, scale, d.color);
+    }
+  }
+
+  return { sIdx, mIdx };
+}
+
+// World Collision & Voxel Query Mapping (Coarse Grid + 3.33x Fine Faces + Floating Islets + Voxel Clouds + Water)
+function checkWorldSolid(wx, wy, wz) {
+  // 1. Check 3.33x Fine Sculpt Grid around the 4 Presidents
+  if (wx >= FINE_WX0 && wx <= FINE_WX1 && wy >= FINE_WY0 && wy <= FINE_WY1 && wz >= FINE_WZ0 && wz <= FINE_WZ1) {
+    const ix = Math.floor((wx - FINE_OX) / V_FINE);
+    const iy = Math.floor((wy - FINE_OY) / V_FINE);
+    const iz = Math.floor((wz - FINE_OZ) / V_FINE);
+    if (ix >= 0 && ix < FX_COUNT && iy >= 0 && iy < FY_COUNT && iz >= 0 && iz < FZ_COUNT) {
+      const packed = fineGrid[fIdx(ix, iy, iz)];
+      if (packed !== 0) {
+        return { solid: true, grid: 'fine', ix, iy, iz, packed, voxelSize: V_FINE,
+          cx: FINE_OX + (ix + 0.5) * V_FINE, cy: FINE_OY + (iy + 0.5) * V_FINE, cz: FINE_OZ + (iz + 0.5) * V_FINE };
+      }
+      if (evalFineSculptEnvelope(wx, wy, wz) > 0.25) {
+        return { solid: false };
+      }
+    }
+  }
+
+  // 2. Check Coarse Island Grid
+  const cx = Math.round(wx), cy = Math.round(wy), cz = Math.round(wz);
+  if (inCoarse(cx, cy, cz)) {
+    const packed = coarseGrid[cIdx(cx, cy, cz)];
+    if (packed !== 0) {
+      return { solid: true, grid: 'coarse', ix: cx - GX0, iy: cy - GY0, iz: cz - GZ0, wx: cx, wy: cy, wz: cz, packed, voxelSize: 1.0, cx, cy, cz };
+    }
+  }
+
+  // 3. Check Floating Islets
+  for (let i = 0; i < floatingIslets.length; i++) {
+    const isl = floatingIslets[i];
+    const gp = isl.grp.position;
+    if (Math.abs(wx - gp.x) <= isl.radius && Math.abs(wz - gp.z) <= isl.radius && Math.abs(wy - gp.y) <= 10) {
+      const lx = Math.round(wx - gp.x);
+      const ly = Math.round(wy - gp.y);
+      const lz = Math.round(wz - gp.z);
+      if (isl.voxelSet.has(`${lx},${ly},${lz}`)) {
+        return { solid: true, grid: 'islet', index: i, voxelSize: 1.0, cx: gp.x + lx, cy: gp.y + ly, cz: gp.z + lz, packed: packColor(94, 128, 56, 2) };
+      }
+    }
+  }
+
+  // 4. Check Voxel Clouds (Walkable in the sky!)
+  for (let i = 0; i < voxelClouds.length; i++) {
+    const cl = voxelClouds[i];
+    const gp = cl.grp.position;
+    if (Math.abs(wx - gp.x) <= cl.sx && Math.abs(wy - gp.y) <= cl.sy && Math.abs(wz - gp.z) <= cl.sz) {
+      const lx = Math.round((wx - gp.x) / 1.1);
+      const ly = Math.round((wy - gp.y) / 1.1);
+      const lz = Math.round((wz - gp.z) / 1.1);
+      if (cl.voxelSet.has(`${lx},${ly},${lz}`)) {
+        return { solid: true, grid: 'cloud', index: i, voxelSize: 1.1, cx: gp.x + lx * 1.1, cy: gp.y + ly * 1.1, cz: gp.z + lz * 1.1, packed: packColor(245, 235, 220, 0) };
+      }
+    }
+  }
+
+  return { solid: false };
+}
+
+function isWaterAtWorld(wx, wy, wz) {
+  const cx = Math.round(wx), cy = Math.round(wy), cz = Math.round(wz);
+  if (!inCoarse(cx, cy, cz)) return false;
+  return waterGrid[cIdx(cx, cy, cz)] !== 0;
+}
+
+// Modify Voxels & Flush Chunks Immediately
+function setCoarseBlockWorld(wx, wy, wz, packedCol, isWaterBlock = false) {
+  const cx = Math.round(wx), cy = Math.round(wy), cz = Math.round(wz);
+  if (!inCoarse(cx, cy, cz)) return false;
+  const flat = cIdx(cx, cy, cz);
+  const ix = cx - GX0, iy = cy - GY0, iz = cz - GZ0;
+  if (isWaterBlock) {
+    waterGrid[flat] = packedCol;
+    waterResult.markDirtyCell(ix, iy, iz);
+  } else {
+    coarseGrid[flat] = packedCol;
+    if (packedCol === 0) waterGrid[flat] = 0;
+    coarseResult.markDirtyCell(ix, iy, iz);
+    waterResult.markDirtyCell(ix, iy, iz);
+    // Also mark adjacent fine chunks if near the sculpt socket boundary
+    if (cx >= FINE_WX0 - 2 && cx <= FINE_WX1 + 2 && cy >= FINE_WY0 - 2 && cy <= FINE_WY1 + 2 && cz >= FINE_WZ0 - 2 && cz <= FINE_WZ1 + 2) {
+      const fix = clamp(Math.floor((cx - FINE_OX) / V_FINE), 0, FX_COUNT - 1);
+      const fiy = clamp(Math.floor((cy - FINE_OY) / V_FINE), 0, FY_COUNT - 1);
+      const fiz = clamp(Math.floor((cz - FINE_OZ) / V_FINE), 0, FZ_COUNT - 1);
+      fineResult.markDirtyCell(fix, fiy, fiz);
+    }
+  }
+  return true;
+}
+
+function flushAllModifiedChunks() {
+  const c = coarseResult.flushDirty();
+  const w = waterResult.flushDirty();
+  const f = fineResult.flushDirty();
+  if (c || w || f) {
+    renderer.shadowMap.needsUpdate = true;
+  }
+}
+
+function detonateDynamiteAt(bx, by, bz) {
+  playerBlastPos.set(bx, by, bz);
+  playerBlastFlash = 1.0;
+  spawnBreakParticles(bx, by, bz, 0xd8cec2, 42, 1.85);
+
+  const rad = 2.8;
+  const r2 = rad * rad;
+  // Carve crater in coarseGrid & waterGrid
+  const x0 = Math.floor(bx - rad), x1 = Math.ceil(bx + rad);
+  const y0 = Math.floor(by - rad), y1 = Math.ceil(by + rad);
+  const z0 = Math.floor(bz - rad), z1 = Math.ceil(bz + rad);
+  for (let y = y0; y <= y1; y++) {
+    for (let z = z0; z <= z1; z++) {
+      for (let x = x0; x <= x1; x++) {
+        if ((x - bx) * (x - bx) + (y - by) * (y - by) + (z - bz) * (z - bz) <= r2) {
+          if (inCoarse(x, y, z)) {
+            const flat = cIdx(x, y, z);
+            if (coarseGrid[flat] !== 0 || waterGrid[flat] !== 0) {
+              coarseGrid[flat] = 0;
+              waterGrid[flat] = 0;
+              coarseResult.markDirtyCell(x - GX0, y - GY0, z - GZ0);
+              waterResult.markDirtyCell(x - GX0, y - GY0, z - GZ0);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Carve crater in fineGrid if within the 4 Faces zone
+  if (bx >= FINE_WX0 - rad && bx <= FINE_WX1 + rad && by >= FINE_WY0 - rad && by <= FINE_WY1 + rad && bz >= FINE_WZ0 - rad && bz <= FINE_WZ1 + rad) {
+    const fx0 = clamp(Math.floor((bx - rad - FINE_OX) / V_FINE), 0, FX_COUNT - 1);
+    const fx1 = clamp(Math.ceil((bx + rad - FINE_OX) / V_FINE), 0, FX_COUNT - 1);
+    const fy0 = clamp(Math.floor((by - rad - FINE_OY) / V_FINE), 0, FY_COUNT - 1);
+    const fy1 = clamp(Math.ceil((by + rad - FINE_OY) / V_FINE), 0, FY_COUNT - 1);
+    const fz0 = clamp(Math.floor((bz - rad - FINE_OZ) / V_FINE), 0, FZ_COUNT - 1);
+    const fz1 = clamp(Math.ceil((bz + rad - FINE_OZ) / V_FINE), 0, FZ_COUNT - 1);
+    for (let iy = fy0; iy <= fy1; iy++) {
+      const wy = FINE_OY + (iy + 0.5) * V_FINE;
+      for (let iz = fz0; iz <= fz1; iz++) {
+        const wz = FINE_OZ + (iz + 0.5) * V_FINE;
+        for (let ix = fx0; ix <= fx1; ix++) {
+          const wx = FINE_OX + (ix + 0.5) * V_FINE;
+          if ((wx - bx) * (wx - bx) + (wy - by) * (wy - by) + (wz - bz) * (wz - bz) <= r2) {
+            const fi = fIdx(ix, iy, iz);
+            if (fineGrid[fi] !== 0) {
+              fineGrid[fi] = 0;
+              fineResult.markDirtyCell(ix, iy, iz);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  flushAllModifiedChunks();
+}
+
+// Reset Entire Island Back to Pristine State
+function resetIslandMap() {
+  coarseGrid.set(initialCoarseGrid);
+  waterGrid.set(initialWaterGrid);
+  fineGrid.set(initialFineGrid);
+  coarseResult.resetAllModified();
+  waterResult.resetAllModified();
+  fineResult.resetAllModified();
+  activeDynamites.length = 0;
+  activeDebris.length = 0;
+  renderer.shadowMap.needsUpdate = true;
+  showToast('🔄 ¡Isla restaurada al 100 % a su estado original!');
+}
+window.resetIslandMap = resetIslandMap;
+
+// Raycast from Player Eye Along Look Direction to Find Targeted Voxel
+function raycastWorldVoxel() {
+  const p = gameState.player;
+  const eyeX = p.pos.x;
+  const eyeY = p.pos.y + 1.22;
+  const eyeZ = p.pos.z;
+
+  const dirX = -Math.sin(p.yaw) * Math.cos(p.pitch);
+  const dirY =  Math.sin(p.pitch);
+  const dirZ = -Math.cos(p.yaw) * Math.cos(p.pitch);
+
+  const step = 0.08;
+  const maxDist = 8.5;
+  let prevX = eyeX, prevY = eyeY, prevZ = eyeZ;
+
+  for (let d = 0.35; d <= maxDist; d += step) {
+    const rx = eyeX + dirX * d;
+    const ry = eyeY + dirY * d;
+    const rz = eyeZ + dirZ * d;
+    const hit = checkWorldSolid(rx, ry, rz);
+    if (hit.solid) {
+      const dx = prevX - hit.cx;
+      const dy = prevY - hit.cy;
+      const dz = prevZ - hit.cz;
+      let nx = 0, ny = 0, nz = 0;
+      if (Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= Math.abs(dz)) nx = Math.sign(dx) || 1;
+      else if (Math.abs(dy) >= Math.abs(dx) && Math.abs(dy) >= Math.abs(dz)) ny = Math.sign(dy) || 1;
+      else nz = Math.sign(dz) || 1;
+      return { ...hit, nx, ny, nz, placeX: Math.round(prevX), placeY: Math.round(prevY), placeZ: Math.round(prevZ) };
+    }
+    prevX = rx; prevY = ry; prevZ = rz;
+  }
+  return null;
+}
+
+// Mine / Break Targeted Block
+function mineTargetedBlock() {
+  gameState.player.swingTimer = 0.28;
+  const hit = gameState.targetVoxel || raycastWorldVoxel();
+  if (!hit) {
+    showToast('Acércate un poco más a un bloque o árbol para picarlo ⛏️', 1400);
+    return false;
+  }
+  const rgbHex = hit.packed & 0xffffff;
+  spawnBreakParticles(hit.cx, hit.cy, hit.cz, rgbHex, 16, 1.0);
+
+  if (hit.grid === 'fine') {
+    // Break a small cluster of fine voxels (~0.6u radius) so mining the statue faces feels responsive!
+    const rFine = 2;
+    for (let dy = -rFine; dy <= rFine; dy++) {
+      for (let dz = -rFine; dz <= rFine; dz++) {
+        for (let dx = -rFine; dx <= rFine; dx++) {
+          if (dx * dx + dy * dy + dz * dz > rFine * rFine + 1) continue;
+          const nix = hit.ix + dx, niy = hit.iy + dy, niz = hit.iz + dz;
+          if (nix >= 0 && nix < FX_COUNT && niy >= 0 && niy < FY_COUNT && niz >= 0 && niz < FZ_COUNT) {
+            fineGrid[fIdx(nix, niy, niz)] = 0;
+            fineResult.markDirtyCell(nix, niy, niz);
+          }
+        }
+      }
+    }
+    flushAllModifiedChunks();
+    return true;
+  } else if (hit.grid === 'coarse') {
+    setCoarseBlockWorld(hit.wx, hit.wy, hit.wz, 0, false);
+    flushAllModifiedChunks();
+    return true;
+  }
+  return false;
+}
+window.mineTargetedBlock = mineTargetedBlock;
+
+// Place Block or Throw Dynamite
+function useSelectedItem() {
+  gameState.player.swingTimer = 0.28;
+  const item = HOTBAR_ITEMS[gameState.selectedSlot];
+  if (!item) return false;
+
+  if (item.type === 'dynamite') {
+    const p = gameState.player;
+    const dirX = -Math.sin(p.yaw) * Math.cos(p.pitch);
+    const dirY =  Math.sin(p.pitch);
+    const dirZ = -Math.cos(p.yaw) * Math.cos(p.pitch);
+    activeDynamites.push({
+      x: p.pos.x + dirX * 0.6,
+      y: p.pos.y + 1.15 + dirY * 0.4,
+      z: p.pos.z + dirZ * 0.6,
+      vx: dirX * 11.5,
+      vy: dirY * 11.5 + 4.2,
+      vz: dirZ * 11.5,
+      age: 0,
+    });
+    showToast('🧨 ¡Dinamita lanzada! Explotará en 1.5 s...', 1500);
+    return true;
+  }
+
+  if (item.type === 'tool') {
+    return mineTargetedBlock();
+  }
+
+  const hit = gameState.targetVoxel || raycastWorldVoxel();
+  if (!hit) return false;
+
+  const px = Math.round(hit.cx + hit.nx * Math.max(0.8, hit.voxelSize));
+  const py = Math.round(hit.cy + hit.ny * Math.max(0.8, hit.voxelSize));
+  const pz = Math.round(hit.cz + hit.nz * Math.max(0.8, hit.voxelSize));
+
+  // Prevent placing a solid block directly inside the player's body
+  const p = gameState.player;
+  if (item.type === 'block' && Math.abs(px - p.pos.x) < 0.65 && Math.abs(pz - p.pos.z) < 0.65 && py >= Math.floor(p.pos.y) && py <= Math.ceil(p.pos.y + p.height)) {
+    return false;
+  }
+
+  if (setCoarseBlockWorld(px, py, pz, item.packed, item.type === 'water')) {
+    spawnBreakParticles(px, py, pz, item.color, 6, 0.45);
+    flushAllModifiedChunks();
+    return true;
+  }
+  return false;
+}
+window.useSelectedItem = useSelectedItem;
+
+// Player AABB Collision Helper
+function checkPlayerBoxCollision(px, py, pz) {
+  const r = gameState.player.radius;
+  const h = gameState.player.height;
+  const ySamples = [py + 0.08, py + 0.72, py + h - 0.08];
+  const xOffsets = [-r, r];
+  const zOffsets = [-r, r];
+
+  let supportRide = null;
+  for (let yi = 0; yi < ySamples.length; yi++) {
+    const sy = ySamples[yi];
+    for (let xi = 0; xi < xOffsets.length; xi++) {
+      for (let zi = 0; zi < zOffsets.length; zi++) {
+        const res = checkWorldSolid(px + xOffsets[xi], sy, pz + zOffsets[zi]);
+        if (res.solid) {
+          if (res.grid === 'islet' || res.grid === 'cloud') supportRide = res;
+          return { collided: true, supportRide };
+        }
+      }
+    }
+  }
+  return { collided: false, supportRide: null };
+}
+
+// Update Player Physics & Movement Each Frame
+function updatePlayerPhysics(dt) {
+  if (gameState.mode !== 'play') return;
+  const p = gameState.player;
+
+  // Carry player if riding the Aerial Tramway or a 1930s Truck!
+  if (gameState.rideState) {
+    if (gameState.rideState.type === 'tram') {
+      const tp = tramCarGroup.position;
+      p.pos.set(tp.x, tp.y - 2.65, tp.z);
+      p.vel.set(0, 0, 0);
+      p.onGround = true;
+    } else if (gameState.rideState.type === 'truck') {
+      const tr = movingTrucks[gameState.rideState.index || 0];
+      if (tr) {
+        p.pos.set(tr.grp.position.x, tr.grp.position.y + 0.95, tr.grp.position.z);
+        p.vel.set(0, 0, 0);
+        p.onGround = true;
+      }
+    }
+    // Disembark if player presses Jump while riding
+    if (gameState.jumpHeld || gameState.keys['Space']) {
+      gameState.rideState = null;
+      p.vel.y = 6.8;
+      updateVehicleButtonLabel();
+      showToast('Bajaste del vehículo 🏃');
+    }
+  } else {
+    // Check if standing on a moving floating islet or voxel cloud to carry player smoothly
+    const under = checkWorldSolid(p.pos.x, p.pos.y - 0.15, p.pos.z);
+    if (under.solid && under.grid === 'islet') {
+      const isl = floatingIslets[under.index];
+      p.pos.add(isl.grp.position.clone().sub(isl.prevPos));
+    } else if (under.solid && under.grid === 'cloud') {
+      const cl = voxelClouds[under.index];
+      p.pos.add(cl.grp.position.clone().sub(cl.prevPos));
+    }
+
+    // Input Movement Vector
+    let moveFwd = 0, moveRight = 0;
+    if (gameState.keys['KeyW'] || gameState.keys['ArrowUp']) moveFwd += 1;
+    if (gameState.keys['KeyS'] || gameState.keys['ArrowDown']) moveFwd -= 1;
+    if (gameState.keys['KeyD'] || gameState.keys['ArrowRight']) moveRight += 1;
+    if (gameState.keys['KeyA'] || gameState.keys['ArrowLeft']) moveRight -= 1;
+
+    moveFwd += -gameState.joyVec.y;
+    moveRight += gameState.joyVec.x;
+
+    const len = Math.hypot(moveFwd, moveRight);
+    if (len > 1.0) { moveFwd /= len; moveRight /= len; }
+
+    const sinY = Math.sin(p.yaw), cosY = Math.cos(p.yaw);
+    const wishX = (-sinY * moveFwd + cosY * moveRight);
+    const wishZ = (-cosY * moveFwd - sinY * moveRight);
+
+    // Check water state (Blue Lake, Creek, Waterfall)
+    p.inWater = isWaterAtWorld(p.pos.x, p.pos.y + 0.45, p.pos.z) || isWaterAtWorld(p.pos.x, p.pos.y + 0.1, p.pos.z);
+
+    const speed = p.flying ? 14.5 : (p.inWater ? 5.6 : 7.8);
+    p.vel.x = wishX * speed;
+    p.vel.z = wishZ * speed;
+
+    const wantJump = gameState.jumpHeld || !!gameState.keys['Space'];
+    const wantDown = gameState.flyDownHeld || !!gameState.keys['ShiftLeft'] || !!gameState.keys['ShiftRight'] || !!gameState.keys['KeyC'];
+
+    if (p.flying) {
+      p.vel.y = 0;
+      if (wantJump) p.vel.y = 9.5;
+      if (wantDown) p.vel.y = -9.5;
+      // Also allow flying in pitch direction when pressing forward
+      if (!wantJump && !wantDown && Math.abs(moveFwd) > 0.15) {
+        p.vel.y = Math.sin(p.pitch) * moveFwd * 10.5;
+      }
+    } else if (p.inWater) {
+      // Swimming buoyancy in the Blue Lake!
+      p.vel.y -= 5.5 * dt;
+      p.vel.y = Math.max(p.vel.y, -2.6);
+      if (wantJump) p.vel.y = 4.6;
+    } else {
+      // Standard Gravity & Jump
+      p.vel.y -= 24.0 * dt;
+      p.vel.y = Math.max(p.vel.y, -32.0);
+      if (wantJump && p.onGround) {
+        p.vel.y = 9.2;
+        p.onGround = false;
+      }
+    }
+
+    // Move X + Auto-Step 1-block ledges
+    const nextX = p.pos.x + p.vel.x * dt;
+    if (!checkPlayerBoxCollision(nextX, p.pos.y, p.pos.z).collided) {
+      p.pos.x = nextX;
+    } else if ((p.onGround || p.inWater) && !checkPlayerBoxCollision(nextX, p.pos.y + 1.05, p.pos.z).collided) {
+      p.pos.x = nextX;
+      p.pos.y += 1.05;
+    }
+
+    // Move Z + Auto-Step 1-block ledges
+    const nextZ = p.pos.z + p.vel.z * dt;
+    if (!checkPlayerBoxCollision(p.pos.x, p.pos.y, nextZ).collided) {
+      p.pos.z = nextZ;
+    } else if ((p.onGround || p.inWater) && !checkPlayerBoxCollision(p.pos.x, p.pos.y + 1.05, nextZ).collided) {
+      p.pos.z = nextZ;
+      p.pos.y += 1.05;
+    }
+
+    // Move Y
+    const nextY = p.pos.y + p.vel.y * dt;
+    if (!checkPlayerBoxCollision(p.pos.x, nextY, p.pos.z).collided) {
+      p.pos.y = nextY;
+      p.onGround = false;
+    } else {
+      if (p.vel.y < 0) p.onGround = true;
+      p.vel.y = 0;
+    }
+
+    // Void-Fall Auto-Respawn if player digs through bottom or falls off the floating island!
+    if (p.pos.y < -35.0) {
+      p.pos.set(0.0, 8.0, 38.5);
+      p.vel.set(0, 0, 0);
+      p.flying = false;
+      updateFlyButtonUI();
+      showToast('⚠️ ¡Caíste al vacío! Respawn automático en la isla 🇸🇻');
+    }
+
+    // Walk animation cycle
+    const horizSpd = Math.hypot(p.vel.x, p.vel.z);
+    if (horizSpd > 0.25) {
+      p.walkCycle += dt * (p.inWater ? 7.0 : 11.0);
+    } else {
+      p.walkCycle *= 0.85;
+    }
+  }
+
+  if (p.swingTimer > 0) {
+    p.swingTimer = Math.max(0, p.swingTimer - dt);
+  }
+
+  // Update status pill when swimming or riding
+  const statusEl = document.getElementById('status-pill');
+  if (statusEl && gameState.mode === 'play') {
+    if (gameState.rideState) {
+      statusEl.textContent = gameState.rideState.type === 'tram'
+        ? '🚡 Viajando en el Teleférico — Pulsa Saltar o «Bajarse» cuando quieras'
+        : '🚚 Viajando en Camión de 1939 — Pulsa Saltar o «Bajarse» cuando quieras';
+    } else if (p.inWater) {
+      statusEl.textContent = '🌊 Nadando en el Lago Azul — Mantén Saltar para subir a la superficie';
+    } else if (p.flying) {
+      statusEl.textContent = '🕊️ Modo Vuelo Activo — Sube a las nubes, islas flotantes o las 4 caras';
+    } else {
+      const item = HOTBAR_ITEMS[gameState.selectedSlot];
+      statusEl.textContent = `🎮 Modo Jugador (${gameState.thirdPerson ? '3ª' : '1ª'} Persona) • Mano: ${item.icon} ${item.name}`;
+    }
+  }
+}
+
+function updatePlayerCamera(t) {
+  const p = gameState.player;
+  const item = HOTBAR_ITEMS[gameState.selectedSlot];
+
+  // Update targeted voxel cursor
+  gameState.targetVoxel = raycastWorldVoxel();
+  if (gameState.targetVoxel) {
+    const tv = gameState.targetVoxel;
+    voxelCursorMesh.visible = true;
+    voxelCursorMesh.position.set(tv.cx, tv.cy, tv.cz);
+    const s = tv.voxelSize * 1.03;
+    voxelCursorMesh.scale.set(s, s, s);
+  } else {
+    voxelCursorMesh.visible = false;
+  }
+
+  // Animate player avatar limbs
+  const swing = p.swingTimer > 0 ? Math.sin((p.swingTimer / 0.28) * Math.PI) * 1.35 : 0;
+  const stride = Math.sin(p.walkCycle) * 0.65 * (Math.hypot(p.vel.x, p.vel.z) > 0.2 ? 1 : 0);
+  avLegL.pivot.rotation.x = stride;
+  avLegR.pivot.rotation.x = -stride;
+  avArmL.pivot.rotation.x = -stride * 0.8;
+  avArmR.pivot.rotation.x = -0.35 - swing + stride * 0.5;
+  avHead.pivot.rotation.x = p.pitch * 0.65;
+
+  const lookDir = new THREE.Vector3(
+    -Math.sin(p.yaw) * Math.cos(p.pitch),
+     Math.sin(p.pitch),
+    -Math.cos(p.yaw) * Math.cos(p.pitch)
+  ).normalize();
+
+  if (gameState.thirdPerson) {
+    playerAvatarGroup.visible = true;
+    fpHandGroup.visible = false;
+    playerAvatarGroup.position.copy(p.pos);
+    playerAvatarGroup.rotation.y = p.yaw + Math.PI;
+
+    // Smooth 3rd-person camera with obstacle pullback
+    const eyePos = new THREE.Vector3(p.pos.x, p.pos.y + 1.28, p.pos.z);
+    let camDist = 3.8;
+    for (let d = 0.6; d <= 3.8; d += 0.25) {
+      const cx = eyePos.x - lookDir.x * d;
+      const cy = eyePos.y - lookDir.y * d + 0.25;
+      const cz = eyePos.z - lookDir.z * d;
+      if (checkWorldSolid(cx, cy, cz).solid) {
+        camDist = Math.max(0.55, d - 0.30);
+        break;
+      }
+    }
+    camera.position.set(
+      eyePos.x - lookDir.x * camDist,
+      eyePos.y - lookDir.y * camDist + 0.25,
+      eyePos.z - lookDir.z * camDist
+    );
+    camera.lookAt(eyePos.x + lookDir.x * 6.0, eyePos.y + lookDir.y * 6.0, eyePos.z + lookDir.z * 6.0);
+  } else {
+    // 1st-Person View + Held Item in Right Hand
+    playerAvatarGroup.visible = false;
+    fpHandGroup.visible = true;
+    const eyePos = new THREE.Vector3(p.pos.x, p.pos.y + 1.24, p.pos.z);
+    camera.position.copy(eyePos);
+    camera.lookAt(eyePos.x + lookDir.x * 10.0, eyePos.y + lookDir.y * 10.0, eyePos.z + lookDir.z * 10.0);
+
+    const rightVec = new THREE.Vector3(Math.cos(p.yaw), 0, -Math.sin(p.yaw));
+    const upVec = new THREE.Vector3(0, 1, 0);
+    const bob = Math.sin(p.walkCycle * 1.5) * 0.025 * (Math.hypot(p.vel.x, p.vel.z) > 0.2 ? 1 : 0);
+    fpHandGroup.position.copy(eyePos)
+      .addScaledVector(lookDir, 0.58 - swing * 0.12)
+      .addScaledVector(rightVec, 0.28)
+      .addScaledVector(upVec, -0.22 + bob - swing * 0.08);
+    fpHandGroup.rotation.set(p.pitch - 0.35 - swing * 0.8, p.yaw, -0.15);
+
+    const isTool = item.type === 'tool';
+    fpPickShaft.pivot.visible = isTool;
+    fpPickHead.pivot.visible = isTool;
+    fpBlockMesh.pivot.visible = !isTool;
+  }
+}
+
+// Build Hotbar UI & Bind Controls
+function initInteractiveUI() {
+  const hotbarEl = document.getElementById('hotbar');
+  if (!hotbarEl) return;
+  hotbarEl.innerHTML = '';
+  HOTBAR_ITEMS.forEach((item, idx) => {
+    const slot = document.createElement('div');
+    slot.className = 'hotbar-slot' + (idx === gameState.selectedSlot ? ' selected' : '');
+    slot.innerHTML = `<span class="slot-key">${idx + 1}</span><span class="slot-icon">${item.icon}</span><span>${item.name}</span>`;
+    slot.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      selectHotbarSlot(idx);
+    });
+    hotbarEl.appendChild(slot);
+  });
+}
+
+function selectHotbarSlot(idx) {
+  gameState.selectedSlot = clamp(idx, 0, HOTBAR_ITEMS.length - 1);
+  const slots = document.querySelectorAll('.hotbar-slot');
+  slots.forEach((el, i) => el.classList.toggle('selected', i === gameState.selectedSlot));
+
+  const item = HOTBAR_ITEMS[gameState.selectedSlot];
+  const col = new THREE.Color(item.color || 0xffffff);
+  for (const part of [avToolHead, fpBlockMesh]) {
+    const arr = part.mesh.geometry.attributes.color.array;
+    for (let i = 0; i < arr.length; i += 3) {
+      arr[i] = col.r; arr[i + 1] = col.g; arr[i + 2] = col.b;
+    }
+    part.mesh.geometry.attributes.color.needsUpdate = true;
+  }
+}
+
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+function setGameMode(newMode) {
+  gameState.mode = newMode;
+  const btnMode = document.getElementById('btn-mode');
+  const btnPov = document.getElementById('btn-pov');
+  const btnFly = document.getElementById('btn-fly');
+  const btnVehicle = document.getElementById('btn-vehicle');
+  const btnTeleport = document.getElementById('btn-teleport');
+  const hotbar = document.getElementById('hotbar');
+  const crosshair = document.getElementById('crosshair');
+  const touchControls = document.getElementById('touch-controls');
+  const helpCard = document.getElementById('help-card');
+  const statusEl = document.getElementById('status-pill');
+
+  if (newMode === 'play') {
+    camera.fov = 62;
+    camera.near = 0.12;
+    camera.updateProjectionMatrix();
+
+    btnMode.textContent = '🎬 Modo Panorámico';
+    btnMode.classList.add('active-mode');
+    btnPov.style.display = 'inline-flex';
+    btnFly.style.display = 'inline-flex';
+    btnVehicle.style.display = 'inline-flex';
+    btnTeleport.style.display = 'inline-flex';
+    hotbar.style.display = 'flex';
+    crosshair.style.display = 'block';
+    touchControls.style.display = (isTouchDevice || window.innerWidth <= 900) ? 'block' : 'none';
+    helpCard.style.display = (!isTouchDevice && window.innerWidth > 900) ? 'block' : 'none';
+
+    showToast('🇸🇻 ¡Bienvenido a la isla! Camina, nada en el lago, sube al teleférico o pica bloques');
+  } else {
+    if (document.pointerLockElement) document.exitPointerLock();
+    camera.fov = 35;
+    camera.near = 1.0;
+    camera.updateProjectionMatrix();
+
+    playerAvatarGroup.visible = false;
+    fpHandGroup.visible = false;
+    voxelCursorMesh.visible = false;
+
+    btnMode.textContent = '🎮 Entrar a la Isla (Respawn)';
+    btnMode.classList.remove('active-mode');
+    btnPov.style.display = 'none';
+    btnFly.style.display = 'none';
+    btnVehicle.style.display = 'none';
+    btnTeleport.style.display = 'none';
+    hotbar.style.display = 'none';
+    crosshair.style.display = 'none';
+    touchControls.style.display = 'none';
+    helpCard.style.display = 'none';
+    if (statusEl) statusEl.textContent = '🎬 Modo Panorámico — Arrastra para mirar o pulsa «Entrar a la Isla (Respawn)»';
+  }
+}
+window.setGameMode = setGameMode;
+
+function updateFlyButtonUI() {
+  const btnFly = document.getElementById('btn-fly');
+  const tbtnFly = document.getElementById('tbtn-fly');
+  const on = gameState.player.flying;
+  if (btnFly) {
+    btnFly.textContent = on ? '🕊️ Volar: ON' : '🕊️ Volar: OFF';
+    btnFly.classList.toggle('active-mode', on);
+  }
+  if (tbtnFly) tbtnFly.classList.toggle('fly-on', on);
+}
+
+function toggleFlying() {
+  gameState.rideState = null;
+  gameState.player.flying = !gameState.player.flying;
+  gameState.player.vel.y = 0;
+  updateFlyButtonUI();
+  updateVehicleButtonLabel();
+  showToast(gameState.player.flying ? '🕊️ ¡Vuelo activado! Puedes subir a las nubes y a las caras' : '🏃 Modo caminar con gravedad activado', 1600);
+}
+
+function updateVehicleButtonLabel() {
+  const btnVehicle = document.getElementById('btn-vehicle');
+  if (!btnVehicle) return;
+  if (!gameState.rideState) {
+    btnVehicle.textContent = '🚡 Subir al Teleférico';
+  } else if (gameState.rideState.type === 'tram') {
+    btnVehicle.textContent = '🚚 Cambiar a Camión';
+  } else {
+    btnVehicle.textContent = '🏃 Bajarse del Vehículo';
+  }
+}
+
+function cycleVehicleRide() {
+  if (gameState.mode !== 'play') setGameMode('play');
+  if (!gameState.rideState) {
+    gameState.rideState = { type: 'tram' };
+    gameState.player.flying = false;
+    updateFlyButtonUI();
+    showToast('🚡 ¡Subiste al Teleférico rumbo a la cima!');
+  } else if (gameState.rideState.type === 'tram') {
+    gameState.rideState = { type: 'truck', index: 0 };
+    showToast('🚚 ¡Subiste al Camión de 1939 por la carretera!');
+  } else {
+    gameState.rideState = null;
+    gameState.player.vel.y = 5.0;
+    showToast('🏃 Bajaste del vehículo');
+  }
+  updateVehicleButtonLabel();
+}
+window.cycleVehicleRide = cycleVehicleRide;
+
+function cycleTeleportSpot() {
+  if (gameState.mode !== 'play') setGameMode('play');
+  gameState.rideState = null;
+  updateVehicleButtonLabel();
+  gameState.teleportIdx = (gameState.teleportIdx + 1) % TELEPORT_SPOTS.length;
+  const sp = TELEPORT_SPOTS[gameState.teleportIdx];
+  gameState.player.pos.copy(sp.pos);
+  gameState.player.vel.set(0, 0, 0);
+  gameState.player.yaw = sp.yaw;
+  gameState.player.pitch = sp.pitch;
+  gameState.player.flying = !!sp.fly;
+  updateFlyButtonUI();
+  const btnTeleport = document.getElementById('btn-teleport');
+  if (btnTeleport) btnTeleport.textContent = `📍 Ir a: ${sp.name}`;
+  showToast(`📍 Teletransportado a: ${sp.name}`);
+}
+
+// Bind Top Bar Buttons
+document.getElementById('btn-mode')?.addEventListener('click', () => {
+  setGameMode(gameState.mode === 'play' ? 'showcase' : 'play');
+});
+document.getElementById('btn-pov')?.addEventListener('click', () => {
+  gameState.thirdPerson = !gameState.thirdPerson;
+  const btnPov = document.getElementById('btn-pov');
+  if (btnPov) btnPov.textContent = gameState.thirdPerson ? '👁️ 3ª Persona' : '👁️ 1ª Persona';
+  showToast(gameState.thirdPerson ? '👁️ Vista en 3ª Persona (Muñequito visible)' : '👁️ Vista en 1ª Persona');
+});
+document.getElementById('btn-fly')?.addEventListener('click', toggleFlying);
+document.getElementById('btn-vehicle')?.addEventListener('click', cycleVehicleRide);
+document.getElementById('btn-teleport')?.addEventListener('click', cycleTeleportSpot);
+document.getElementById('btn-reset')?.addEventListener('click', resetIslandMap);
+
+// Keyboard Listeners (PC)
+window.addEventListener('keydown', (e) => {
+  gameState.keys[e.code] = true;
+  if (e.code === 'Space') {
+    const now = performance.now();
+    if (gameState.mode === 'play' && now - gameState.lastSpaceTime < 320) {
+      toggleFlying();
+      gameState.lastSpaceTime = 0;
+    } else {
+      gameState.lastSpaceTime = now;
+    }
+  } else if (e.code === 'KeyF' && gameState.mode === 'play') {
+    toggleFlying();
+  } else if (e.code === 'KeyV' && gameState.mode === 'play') {
+    document.getElementById('btn-pov')?.click();
+  } else if (e.code === 'KeyE' && gameState.mode === 'play') {
+    cycleVehicleRide();
+  } else if (e.code === 'KeyR') {
+    resetIslandMap();
+  } else if (e.code.startsWith('Digit')) {
+    const num = parseInt(e.code.replace('Digit', ''), 10);
+    if (num >= 1 && num <= HOTBAR_ITEMS.length) selectHotbarSlot(num - 1);
+  }
+});
+window.addEventListener('keyup', (e) => {
+  gameState.keys[e.code] = false;
+});
+
+// Mouse / Pointer Look & Mining/Building on Canvas
+const canvasEl = renderer.domElement;
+canvasEl.addEventListener('contextmenu', (e) => e.preventDefault());
+
+let lookPointerId = null;
+let lookStartX = 0, lookStartY = 0, lookLastX = 0, lookLastY = 0, lookMoved = false;
+
+canvasEl.addEventListener('pointerdown', (e) => {
+  if (gameState.mode === 'showcase') {
+    showcaseDrag.active = true;
+    showcaseDrag.lastX = e.clientX;
+    showcaseDrag.lastY = e.clientY;
+    return;
+  }
+
+  // On PC with mouse, click locks pointer or mines/uses directly
+  if (e.pointerType === 'mouse') {
+    if (document.pointerLockElement !== canvasEl) {
+      canvasEl.requestPointerLock?.();
+    } else {
+      if (e.button === 0) mineTargetedBlock();
+      else if (e.button === 2) useSelectedItem();
+    }
+    return;
+  }
+
+  // On Mobile / Touch: right or center screen drag rotates camera; quick tap mines/places!
+  if (lookPointerId === null) {
+    lookPointerId = e.pointerId;
+    lookStartX = lookLastX = e.clientX;
+    lookStartY = lookLastY = e.clientY;
+    lookMoved = false;
+    document.getElementById('touch-controls').style.display = 'block';
+  }
+});
+
+window.addEventListener('pointermove', (e) => {
+  if (gameState.mode === 'showcase' && showcaseDrag.active) {
+    const dx = e.clientX - showcaseDrag.lastX;
+    const dy = e.clientY - showcaseDrag.lastY;
+    showcaseDrag.lastX = e.clientX;
+    showcaseDrag.lastY = e.clientY;
+    showcaseDrag.yawOffset -= dx * 0.0055;
+    showcaseDrag.pitchOffset = clamp(showcaseDrag.pitchOffset + dy * 0.004, -0.7, 0.9);
+    return;
+  }
+
+  if (gameState.mode === 'play') {
+    if (document.pointerLockElement === canvasEl) {
+      gameState.player.yaw -= e.movementX * 0.0032;
+      gameState.player.pitch = clamp(gameState.player.pitch - e.movementY * 0.0030, -1.42, 1.42);
+      return;
+    }
+    if (e.pointerId === lookPointerId) {
+      const dx = e.clientX - lookLastX;
+      const dy = e.clientY - lookLastY;
+      lookLastX = e.clientX;
+      lookLastY = e.clientY;
+      if (Math.hypot(e.clientX - lookStartX, e.clientY - lookStartY) > 10) lookMoved = true;
+      gameState.player.yaw -= dx * 0.0055;
+      gameState.player.pitch = clamp(gameState.player.pitch - dy * 0.0050, -1.42, 1.42);
+    }
+  }
+});
+
+window.addEventListener('pointerup', (e) => {
+  showcaseDrag.active = false;
+  if (e.pointerId === lookPointerId) {
+    if (!lookMoved && gameState.mode === 'play') {
+      // Quick tap on screen in mobile mode uses/mines the targeted voxel
+      useSelectedItem();
+    }
+    lookPointerId = null;
+  }
+});
+
+window.addEventListener('wheel', (e) => {
+  if (gameState.mode === 'showcase') {
+    showcaseDrag.zoomOffset = clamp(showcaseDrag.zoomOffset + e.deltaY * 0.08, -110, 65);
+  } else if (gameState.mode === 'play') {
+    const dir = Math.sign(e.deltaY);
+    selectHotbarSlot((gameState.selectedSlot + dir + HOTBAR_ITEMS.length) % HOTBAR_ITEMS.length);
+  }
+}, { passive: true });
+
+// Mobile Virtual Thumbstick (Roblox / Minecraft Style)
+{
+  const joyZone = document.getElementById('joystick-zone');
+  const joyKnob = document.getElementById('joystick-knob');
+  let joyPointerId = null;
+
+  function updateJoystick(clientX, clientY) {
+    const rect = joyZone.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const maxR = rect.width * 0.38;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxR) {
+      dx = (dx / dist) * maxR;
+      dy = (dy / dist) * maxR;
+    }
+    joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+    gameState.joyVec.x = dx / maxR;
+    gameState.joyVec.y = dy / maxR;
+  }
+
+  joyZone?.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    joyPointerId = e.pointerId;
+    joyZone.setPointerCapture?.(e.pointerId);
+    updateJoystick(e.clientX, e.clientY);
+  });
+  joyZone?.addEventListener('pointermove', (e) => {
+    if (e.pointerId === joyPointerId) {
+      e.stopPropagation();
+      updateJoystick(e.clientX, e.clientY);
+    }
+  });
+  const resetJoy = (e) => {
+    if (e.pointerId === joyPointerId) {
+      joyPointerId = null;
+      joyKnob.style.transform = 'translate(0px, 0px)';
+      gameState.joyVec.x = 0;
+      gameState.joyVec.y = 0;
+    }
+  };
+  joyZone?.addEventListener('pointerup', resetJoy);
+  joyZone?.addEventListener('pointercancel', resetJoy);
+
+  // Mobile Action Buttons
+  const tbtnJump = document.getElementById('tbtn-jump');
+  tbtnJump?.addEventListener('pointerdown', (e) => { e.stopPropagation(); gameState.jumpHeld = true; tbtnJump.classList.add('pressed'); });
+  tbtnJump?.addEventListener('pointerup', (e) => { e.stopPropagation(); gameState.jumpHeld = false; tbtnJump.classList.remove('pressed'); });
+  tbtnJump?.addEventListener('pointercancel', () => { gameState.jumpHeld = false; tbtnJump.classList.remove('pressed'); });
+
+  document.getElementById('tbtn-fly')?.addEventListener('pointerdown', (e) => { e.stopPropagation(); toggleFlying(); });
+  document.getElementById('tbtn-mine')?.addEventListener('pointerdown', (e) => { e.stopPropagation(); mineTargetedBlock(); });
+  document.getElementById('tbtn-use')?.addEventListener('pointerdown', (e) => { e.stopPropagation(); useSelectedItem(); });
+}
+
+initInteractiveUI();
+if (params.get('mode') === 'play') setGameMode('play');
+
+let manualCaptureMode = false;
+function renderAt(t) {
+  manualCaptureMode = true;
+  const safeT = Number.isFinite(t) ? t : 0.0;
+  updateSceneAtTime(safeT);
+  composer.render();
+}
+window.renderAt = renderAt;
+
+window.__SCENE_STATS__ = {
+  width: WIDTH,
+  height: HEIGHT,
+  duration: DURATION,
+  coarseFaces: coarseResult.totalFaces,
+  fineFaces: fineResult.totalFaces,
+  waterFaces: waterResult.totalFaces,
+  coarseChunks: coarseResult.group.children.length,
+  fineChunks: fineResult.group.children.length,
+  peopleCount: PEOPLE.length,
+  interactiveReady: true,
+};
+window.__GAME_STATE__ = gameState;
+
+updateSceneAtTime(0.0);
+composer.render();
+window.__SCENE_READY__ = true;
+
+const clockStart = performance.now();
+let prevFrameNow = clockStart;
+function animateLoop(now) {
+  if (manualCaptureMode) return;
+  const dt = clamp((now - prevFrameNow) / 1000.0, 0.001, 0.08);
+  prevFrameNow = now;
+  const totalElapsed = (now - clockStart) / 1000.0;
+
+  // Save previous positions of floating islets & clouds so player can ride them
+  for (let i = 0; i < floatingIslets.length; i++) {
+    floatingIslets[i].prevPos.copy(floatingIslets[i].grp.position);
+  }
+  for (let i = 0; i < voxelClouds.length; i++) {
+    voxelClouds[i].prevPos.copy(voxelClouds[i].grp.position);
+  }
+
+  const animTime = gameState.mode === 'showcase' ? (totalElapsed % DURATION) : totalElapsed;
+  updateSceneAtTime(animTime);
+  if (gameState.mode === 'play') {
+    updatePlayerPhysics(dt);
+    updatePlayerCamera(animTime);
+  }
+  composer.render();
+  requestAnimationFrame(animateLoop);
+}
+requestAnimationFrame(animateLoop);
+</script>
+</body>
+</html>
